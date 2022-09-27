@@ -1,7 +1,4 @@
-use poise::{
-    async_trait,
-    serenity_prelude::{self as serenity, EventHandler, Message},
-};
+use poise::serenity_prelude as serenity;
 
 use uwuifier::uwuify_str_sse;
 
@@ -15,38 +12,43 @@ struct Handler {}
 static UWUCHANNEL: serenity::ChannelId = serenity::ChannelId(1024420622647967824);
 static NORMALCHANNEL: u64 = 1023332213078626448;
 
-#[async_trait]
-impl EventHandler for Handler {
-    async fn message(&self, ctx: serenity::Context, msg: Message) {
-        let content = &msg.content_safe(&ctx.cache);
-        let channel_id = &msg.channel_id;
+async fn event_listener(
+    ctx: &serenity::Context,
+    event: &poise::Event<'_>,
+    _framework: poise::FrameworkContext<'_, Data, Error>,
+    _user_data: &Data,
+) -> Result<(), Error> {
+    match event {
+        poise::Event::Message { new_message } => {
+            let msg = new_message;
 
-        let author_name = match msg.author_nick(&ctx.http).await {
-            Some(x) => x,
-            None => msg.author.name,
-        };
+            let content = &msg.content_safe(&ctx.cache);
+            let channel_id = &msg.channel_id;
 
-        if content == "" || channel_id.as_u64().to_owned() != NORMALCHANNEL {
-            return;
+            let author_name = msg.author.tag();
+
+            let avatar_url = match msg.author.avatar_url() {
+                Some(x) => x,
+                None => "".to_string(),
+            };
+
+            if content != "" && channel_id.as_u64().to_owned() == NORMALCHANNEL {
+                let uwud = uwuify_str_sse(content);
+
+                UWUCHANNEL
+                    .send_message(&ctx.http, |msg| {
+                        msg.embed(|e| {
+                            e.author(|a| a.name(author_name).icon_url(avatar_url));
+                            e.description(uwud);
+                            e.color(0xffffff)
+                        })
+                    })
+                    .await
+                    .unwrap();
+            }
         }
-
-        let uwud = uwuify_str_sse(content);
-
-        UWUCHANNEL
-            .send_message(&ctx.http, |msg| {
-                msg.embed(|e| {
-                    e.author(|a| a.name(author_name));
-                    e.description(uwud)
-                })
-            })
-            .await
-            .unwrap();
+        _ => {}
     }
-}
-
-#[poise::command(prefix_command)]
-async fn help(ctx: Context<'_>) -> Result<(), Error> {
-    ctx.send(|m| m.embed(|e| e.title("shit yorself"))).await?;
 
     Ok(())
 }
@@ -55,19 +57,11 @@ async fn help(ctx: Context<'_>) -> Result<(), Error> {
 async fn main() {
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![help()],
-            prefix_options: poise::PrefixFrameworkOptions {
-                prefix: Some("'".into()),
-                ..Default::default()
-            },
             ..Default::default()
         })
-        .token(std::env::var("token").expect("No token in env"))
-        .intents(
-            serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT,
-        )
-        .user_data_setup(move |_, _, _| Box::pin(async move { Ok(Data {}) }))
-        .client_settings(|f| f.event_handler(Handler {}));
+        .token(std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN"))
+        .intents(serenity::GatewayIntents::non_privileged())
+        .user_data_setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(Data {}) }));
 
     framework.run().await.unwrap();
 }
