@@ -1,35 +1,37 @@
-const { Client, GatewayIntentBits } = require("discord.js");
-const { default: Uwuifier } = require("uwuifier");
-const client = new Client({ intents: [GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessages, GatewayIntentBits.Guilds] });
+let { Client, GatewayIntentBits } = require("discord.js");
+let Uwuifier = require("uwuifier");
+const client = new Client({ intents: [GatewayIntentBits.GuildWebhooks, GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 require("dotenv").config();
 
-let uwuifier = new Uwuifier();
+let uwuifier = new Uwuifier.default();
 
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
 
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isChatInputCommand()) return;
+client.on("messageCreate", async msg => {
+  if (msg.author.bot) return;
+  if (msg.content.startsWith("[") && msg.content.endsWith("]")) {
 
-  let text = interaction.options.getString("text");
+    let text = msg.cleanContent.slice(1, msg.cleanContent.length - 1)
 
-  let uwu = uwuifier.uwuifySentence(text);
+    if (text.length == 0) return;
 
-  let webhooks = await interaction.channel.fetchWebhooks();
+    let uwu = uwuifier.uwuifySentence(text);
+    let name = uwuifier.uwuifyWords(msg.author.username);
+    let avatarUrl = msg.author.avatarURL();
 
-  let webhook;
+    let webhooks = await msg.channel.fetchWebhooks().catch(console.error);
+    let webhook = webhooks.first();
 
-  if (webhooks.size == 0) {
-    webhook = await interaction.channel.createWebhook({
-      name: "Uwu webhook",
-      avatar: "https://media.discordapp.net/attachments/1015273149115416596/1025011813026373682/licc.png",
-    }).catch(console.error);
-  } else webhook = webhooks.first();
+    await msg.delete();
 
-  webhook.send({
-    content: uwu,
-  })
+    webhook.send({
+      content: uwu,
+      username: name,
+      avatarURL: avatarUrl,
+    })
+  }
 })
 
 client.login(process.env.token);
