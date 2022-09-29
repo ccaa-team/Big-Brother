@@ -34,11 +34,11 @@ client.on("messageCreate", async msg => {
     if (webhooks === undefined) {
       webhooks = await msg.channel.fetchWebhooks().catch(console.error);
       if (webhooks.size == 0) {
-        let hook = await msg.channel.createWebhook({
+        await msg.channel.createWebhook({
           name: "UwU webhook",
           avatar: "https://media.discordapp.net/attachments/1015273149115416596/1025011813026373682/licc.png",
         }).then(console.log).catch(console.error);
-        webhooks[0] = hook;
+        webhooks = await msg.channel.fetchWebhooks().catch(console.error); // :skull:
       }
       webhook_cache[msg.channelId] = webhooks;
     }
