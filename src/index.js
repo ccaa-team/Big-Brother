@@ -26,13 +26,15 @@ client.on("messageCreate", async msg => {
     let avatarUrl = msg.author.avatarURL();
 
     let webhooks = webhook_cache[msg.channelId]
+
     if (webhooks === undefined) {
       webhooks = await msg.channel.fetchWebhooks().catch(console.error);
       webhook_cache[msg.channelId] = webhooks;
     }
+
     let webhook = webhooks.first();
 
-    await msg.delete().catch(console.err);
+    msg.delete().catch(console.err);
 
     webhook.send({
       content: uwu,
