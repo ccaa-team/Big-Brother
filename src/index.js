@@ -13,9 +13,13 @@ client.on("ready", () => {
 
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
-  if (msg.content.startsWith("[") && msg.content.endsWith("]")) {
+  if (msg.content.startsWith("||") || msg.author.id == "1000953755744882698") {
 
-    let text = msg.cleanContent.slice(1, msg.cleanContent.length - 1)
+    let offset = 2;
+
+    if (msg.author.id == "1000953755744882698") offset = 0;
+
+    let text = msg.cleanContent.slice(offset, msg.cleanContent.length)
 
     text = text.replace("@everyone", "at everyone");
 
