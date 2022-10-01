@@ -11,7 +11,7 @@ client.on("ready", () => {
 
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
-  if (msg.content.startsWith("||")) {
+  if (msg.content.startsWith("uwuify")) {
 
     let offset = 2;
 
