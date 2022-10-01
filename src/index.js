@@ -13,7 +13,7 @@ client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
   if (msg.content.startsWith("uwuify")) {
 
-    let offset = 2;
+    let offset = 6;
 
     let text = msg.cleanContent.slice(offset, msg.cleanContent.length)
 
