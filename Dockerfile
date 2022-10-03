@@ -1,4 +1,4 @@
-FROM node:18.9.1-alpine
+FROM node:18.9.2-alpine
 
 WORKDIR /usr/src/big-brother
 
