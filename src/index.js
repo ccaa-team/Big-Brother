@@ -5,7 +5,15 @@ const client = new Client({
 });
 require("dotenv").config();
 
-let uwuifier = new Uwuifier.default();
+let uwuifier = new Uwuifier({
+  spaces: {
+    faces: 0.125,
+    actions: 0,
+    stutters: 0.125,
+  },
+  words: 1,
+  exclamations: 1
+});
 
 client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
@@ -15,8 +23,6 @@ client.on("interactionCreate", async interaction => {
   let text = interaction.options.getString("text");
 
   text = text.replace("@everyone", "at everyone");
-
-  if (text.length == 0) return;
 
   let uwu = uwuifier.uwuifySentence(text);
   let name = uwuifier.uwuifyWords(interaction.user.username);
