@@ -5,7 +5,7 @@ const client = new Client({
 });
 require("dotenv").config();
 
-let uwuifier = new Uwuifier({
+let uwuifier = new Uwuifier.default({
   spaces: {
     faces: 0.125,
     actions: 0,
