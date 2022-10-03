@@ -1,6 +1,8 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 const Uwuifier = require("uwuifier");
-const client = new Client({ intents: [GatewayIntentBits.GuildWebhooks, GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+const client = new Client({
+  intents: [GatewayIntentBits.GuildWebhooks, GatewayIntentBits.Guilds],
+});
 require("dotenv").config();
 
 let uwuifier = new Uwuifier.default();
@@ -9,41 +11,39 @@ client.on("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
 
-client.on("messageCreate", async msg => {
-  if (msg.author.bot) return;
-  if (msg.content.startsWith("uwuify")) {
+client.on("interactionCreate", async interaction => {
+  let text = interaction.options.getString("text");
 
-    let offset = 6;
+  text = text.replace("@everyone", "at everyone");
 
-    let text = msg.cleanContent.slice(offset, msg.cleanContent.length)
+  if (text.length == 0) return;
 
-    text = text.replace("@everyone", "at everyone");
+  let uwu = uwuifier.uwuifySentence(text);
+  let name = uwuifier.uwuifyWords(interaction.user.username);
+  let avatarUrl = interaction.user.avatarURL();
 
-    if (text.length == 0) return;
-
-    let uwu = uwuifier.uwuifySentence(text);
-    let name = uwuifier.uwuifyWords(msg.author.username);
-    let avatarUrl = msg.author.avatarURL();
-
-    let webhooks = await msg.channel.fetchWebhooks().catch(console.error);
-    if (webhooks.size == 0) {
-      await msg.channel.createWebhook({
+  let webhooks = await interaction.channel.fetchWebhooks().catch(console.error);
+  if (webhooks.size == 0) {
+    await interaction.channel
+      .createWebhook({
         name: "UwU webhook",
-        avatar: "https://media.discordapp.net/attachments/1015273149115416596/1025011813026373682/licc.png",
-      }).then(console.log).catch(console.error);
-      webhooks = await msg.channel.fetchWebhooks().catch(console.error); // :skull:
-    }
-
-    let webhook = webhooks.first();
-
-    msg.delete().catch(console.err);
-
-    webhook.send({
-      content: uwu,
-      username: name,
-      avatarURL: avatarUrl,
-    })
+        avatar:
+          "https://media.discordapp.net/attachments/1015273149115416596/1025011813026373682/licc.png",
+      })
+      .then(console.log)
+      .catch(console.error);
+    webhooks = await interaction.channel.fetchWebhooks().catch(console.error); // :skull:
   }
-})
+
+  let webhook = webhooks.first();
+
+  webhook.send({
+    content: uwu,
+    username: name,
+    avatarURL: avatarUrl,
+  });
+
+  await interaction.reply({ content: "ok.", ephemeral: true });
+});
 
 client.login(process.env.token);
