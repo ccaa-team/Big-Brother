@@ -19,7 +19,10 @@ async function execute(interaction) {
   let uwu = uwuifier.uwuifySentence(text);
 
   if (uwu.length > 2000) {
-    interaction.reply("Your message was too long.");
+    interaction.reply({
+      content: "Your message was too long.",
+      ephemeral: true,
+    });
   }
 
   let name = uwuifier.uwuifyWords(interaction.user.username);
