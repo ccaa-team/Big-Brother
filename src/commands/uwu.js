@@ -53,7 +53,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("uwu")
     .setDescription("UwUifies your text.")
-    .addStringOption(option =>
+    .addStringOption((option) =>
       option
         .setName("text")
         .setDescription("The text to uwuify")
