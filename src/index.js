@@ -2,8 +2,10 @@ const { Client, GatewayIntentBits, Collection } = require("discord.js");
 const fs = require("node:fs");
 const path = require("node:path");
 
+const licc_emoji = "<:whatwedotoyourballs:1023352899075571752>"
+
 const client = new Client({
-  intents: [GatewayIntentBits.GuildWebhooks, GatewayIntentBits.Guilds],
+  intents: [GatewayIntentBits.GuildWebhooks, GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent],
 });
 
 client.commands = new Collection();
@@ -40,5 +42,11 @@ client.on("interactionCreate", async (interaction) => {
     await interaction.reply({ content: `Error: ${error}`, ephemeral: true });
   }
 });
+
+client.on("message", async (msg) => {
+  if (msg.content.match(/balls/g)) {
+    msg.react(licc_emoji);
+  }
+})
 
 client.login(process.env.token);
