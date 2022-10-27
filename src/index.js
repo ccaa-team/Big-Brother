@@ -47,6 +47,12 @@ client.on(Events.MessageCreate, msg => {
   if (msg.content.match(/ba[lw][lw]s/g)) {
     msg.react(licc_emoji);
   }
+
+  let roll = Math.random();
+
+  if (roll >= 0.99) {
+    msg.reply("*Pees in your ass*");
+  }
 })
 
 client.login(process.env.token);
