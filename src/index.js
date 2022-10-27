@@ -1,11 +1,11 @@
-const { Client, GatewayIntentBits, Collection } = require("discord.js");
+const { Client, GatewayIntentBits, Collection, Events } = require("discord.js");
 const fs = require("node:fs");
 const path = require("node:path");
 
 const licc_emoji = "<:whatwedotoyourballs:1023352899075571752>"
 
 const client = new Client({
-  intents: [GatewayIntentBits.GuildWebhooks, GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent],
+  intents: [GatewayIntentBits.GuildWebhooks, GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessages],
 });
 
 client.commands = new Collection();
@@ -43,8 +43,8 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-client.on("message", async (msg) => {
-  if (msg.content.match(/balls/g)) {
+client.on(Events.MessageCreate, msg => {
+  if (msg.content.match(/ba[lw][lw]s/g)) {
     msg.react(licc_emoji);
   }
 })
