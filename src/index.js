@@ -43,7 +43,8 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-var last_value = Math.floor((new Date()).getTime() / 1000);
+var last_value = Math.floor((new Date()).getTime() / 1000) % Math.pow(2, 32);
+console.log(last_value)
 
 function mulberry32(a) {
     return function() {
@@ -63,9 +64,12 @@ client.on(Events.MessageCreate, msg => {
     msg.reply("🗿");
   }
 
-  let roll = mulberry32(last_value) % 100;
+  let roll = mulberry32(last_value)();
+  last_value = roll;
 
-  if (roll >= 90) {
+  console.log(last_value);
+
+  if (roll >= .9) {
     msg.reply("*Pees in your ass*");
   }
 })
