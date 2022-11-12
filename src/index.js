@@ -66,7 +66,6 @@ client.on(Events.MessageCreate, msg => {
   }
 
   let roll = generator();
-  console.log(roll)
 
   if (roll >= .95) {
     msg.reply("*Pees in your ass*");
