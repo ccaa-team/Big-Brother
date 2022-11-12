@@ -43,8 +43,7 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-var last_value = Math.floor((new Date()).getTime() / 1000) % Math.pow(2, 32);
-console.log(last_value)
+var seed = Math.floor((new Date()).getTime() / 1000) % Math.pow(2, 32);
 
 function mulberry32(a) {
     return function() {
@@ -55,6 +54,8 @@ function mulberry32(a) {
     }
 }
 
+let generator = mulberry32(seed);
+
 client.on(Events.MessageCreate, msg => {
   if (msg.content.match(/ba[lw][lw]s/gi)) {
     msg.react(licc_emoji);
@@ -64,12 +65,10 @@ client.on(Events.MessageCreate, msg => {
     msg.reply("🗿");
   }
 
-  let roll = mulberry32(last_value)();
-  last_value = roll;
+  let roll = generator();
+  console.log(roll)
 
-  console.log(last_value);
-
-  if (roll >= .9) {
+  if (roll >= .95) {
     msg.reply("*Pees in your ass*");
   }
 })
