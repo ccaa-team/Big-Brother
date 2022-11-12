@@ -43,18 +43,29 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
+var last_value = Math.floor((new Date()).getTime() / 1000);
+
+function mulberry32(a) {
+    return function() {
+      var t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+}
+
 client.on(Events.MessageCreate, msg => {
   if (msg.content.match(/ba[lw][lw]s/gi)) {
     msg.react(licc_emoji);
   }
 
-  if (msg.content.match("🗿")) {
-    msg.react("🗿");
+  if (msg.content.match("moyai")) {
+    msg.reply("🗿");
   }
 
-  let roll = Math.random();
+  let roll = mulberry32(last_value) % 100;
 
-  if (roll >= 0.99) {
+  if (roll >= 90) {
     msg.reply("*Pees in your ass*");
   }
 })
