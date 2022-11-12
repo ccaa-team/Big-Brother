@@ -44,8 +44,12 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 client.on(Events.MessageCreate, msg => {
-  if (msg.content.match(/ba[lw][lw]s/g)) {
+  if (msg.content.match(/ba[lw][lw]s/gi)) {
     msg.react(licc_emoji);
+  }
+
+  if (msg.content.match("🗿")) {
+    msg.react("🗿");
   }
 
   let roll = Math.random();
