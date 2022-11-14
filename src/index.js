@@ -61,8 +61,12 @@ client.on(Events.MessageCreate, msg => {
     msg.react(licc_emoji);
   }
 
-  if (msg.content.match("moyai")) {
+  if (msg.content.match(/moyai/gi)) {
     msg.reply("🗿");
+  }
+
+  if (msg.content.match("waaa")) {
+    msg.reply("https://cdn.discordapp.com/attachments/805338781095690261/999901603576414328/crying_cat_meme_6Hz8ShsPCY8.mp4");
   }
 
   let roll = generator();
