@@ -57,6 +57,10 @@ function mulberry32(a) {
 let generator = mulberry32(seed);
 
 client.on(Events.MessageCreate, msg => {
+  if (msg.guildId != "1046099386062614610") {
+    return;
+  }
+
   if (msg.content.match(/ba[lw][lw]s/gi)) {
     msg.react(licc_emoji);
   }

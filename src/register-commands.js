@@ -19,7 +19,7 @@ const rest = new REST({ version: "10" }).setToken(process.env.token);
 
 rest
   .put(
-    Routes.applicationGuildCommands(process.env.clientId, process.env.guildId),
+    Routes.applicationCommands(process.env.clientId),
     { body: commands }
   )
   .then((data) =>
