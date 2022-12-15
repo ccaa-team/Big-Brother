@@ -57,11 +57,17 @@ function mulberry32(a) {
 let generator = mulberry32(seed);
 
 client.on(Events.MessageCreate, msg => {
-  if (msg.guildId != "1046099386062614610") {
+  // This should never happen but just in case.
+  if (!msg.guild.available) {
     return;
   }
 
-  if (msg.content.match(/ba[lw][lw]s/gi)) {
+  // Check the guild id so we don't wreak havoc in other servers.
+  if (msg.guild.id == "1047628287431688364") {
+    return;
+  }
+
+  if (msg.content.match(/ba[lw][lw]s/g)) {
     msg.react(licc_emoji);
   }
 
