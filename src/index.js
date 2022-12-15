@@ -75,7 +75,7 @@ client.on(Events.MessageCreate, msg => {
     msg.reply("🗿");
   }
 
-  if (msg.content.match("waaa")) {
+  if (msg.content.match(/waaa/gi)) {
     msg.reply("https://cdn.discordapp.com/attachments/805338781095690261/999901603576414328/crying_cat_meme_6Hz8ShsPCY8.mp4");
   }
 
