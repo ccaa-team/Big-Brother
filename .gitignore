@@ -1,0 +1,14 @@
+# Xmake cache
+.xmake/
+build/
+
+# MacOS Cache
+.DS_Store
+
+# Secret
+token.txt
+
+
+# Added by cargo
+
+/target
