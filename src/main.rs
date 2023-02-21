@@ -211,7 +211,7 @@ impl EventHandler for Handler {
             .await;
     }
     async fn ready(&self, ctx: Context, ready: Ready) {
-        ready.playing("with VirtIO's balls");
+        ctx.set_activity(Activity::playing("with VirtIO's balls")).await;
         let _ = Command::set_global_application_commands(&ctx.http, |commands| {
             commands.create_application_command(|cmd| {
                 cmd.name("mrbeast").description("OMG IT'S MRBEAST'")
