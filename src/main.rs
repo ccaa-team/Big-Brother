@@ -10,7 +10,7 @@ use serenity::model::application::interaction::Interaction;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::command::{Command, CommandOptionType};
 use serenity::model::prelude::interaction::application_command::CommandDataOptionValue;
-use serenity::model::prelude::{AttachmentType, Message};
+use serenity::model::prelude::{AttachmentType, Message, Activity};
 use serenity::model::webhook::Webhook;
 use serenity::prelude::*;
 use serenity::{async_trait, Client};
@@ -210,7 +210,7 @@ impl EventHandler for Handler {
             })
             .await;
     }
-    async fn ready(&self, ctx: Context, ready: Ready) {
+    async fn ready(&self, ctx: Context, _ready: Ready) {
         ctx.set_activity(Activity::playing("with VirtIO's balls")).await;
         let _ = Command::set_global_application_commands(&ctx.http, |commands| {
             commands.create_application_command(|cmd| {
