@@ -1,16 +1,16 @@
 mod uwu;
-use std::env;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
 
 use rand::Rng;
 use serenity::model::application::interaction::application_command::ApplicationCommandInteraction;
+use serenity::model::application::interaction::autocomplete::AutocompleteInteraction;
 use serenity::model::application::interaction::Interaction;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::command::{Command, CommandOptionType};
 use serenity::model::prelude::interaction::application_command::CommandDataOptionValue;
-use serenity::model::prelude::{AttachmentType, Message, Reaction};
+use serenity::model::prelude::{AttachmentType, Message};
 use serenity::model::webhook::Webhook;
 use serenity::prelude::*;
 use serenity::{async_trait, Client};
@@ -89,7 +89,23 @@ async fn uwu(ctx: &Context, inter: &ApplicationCommandInteraction) -> Result<(),
 }
 
 async fn pedo(ctx: &Context, inter: &ApplicationCommandInteraction) -> Result<(), SerenityError> {
-    let file = Path::new("assets/pedo.png");
+    // Crashing should be impossible because the argument is required.
+    let arg = inter
+        .data
+        .options
+        .get(0)
+        .unwrap()
+        .resolved
+        .as_ref()
+        .unwrap();
+
+    let name = if let CommandDataOptionValue::String(input) = arg {
+        input
+    } else {
+        panic!();
+    };
+
+    let file = Path::new(name);
     inter
         .create_interaction_response(&ctx.http, |res| {
             res.interaction_response_data(|d| d.add_file(file))
@@ -97,6 +113,23 @@ async fn pedo(ctx: &Context, inter: &ApplicationCommandInteraction) -> Result<()
         .await?;
 
     Ok(())
+}
+
+async fn pedo_autoc(ctx: &Context, autoc: &AutocompleteInteraction) {
+    let paths = fs::read_dir("./assets/pedo").expect("assets folder not found.");
+
+    let _ = autoc
+        .create_autocomplete_response(&ctx.http, |res| {
+            for path in paths {
+                let path2 = path.unwrap().path();
+                let name = path2.display().to_string();
+                let display = name.replace("./assets/pedo/", "");
+
+                res.add_string_choice(display, name);
+            }
+            res
+        })
+        .await;
 }
 
 async fn cmd_todo(
@@ -143,6 +176,9 @@ impl EventHandler for Handler {
             if text.contains("balls") {
                 out += "<:whatwedotoyourballs:1023352899075571752> ";
             }
+            if text.contains("connor") {
+                out += ":skull: "
+            }
 
             out
         };
@@ -150,23 +186,23 @@ impl EventHandler for Handler {
         let content = msg.content.to_lowercase();
 
         let files = get_files(&content);
-        let mut content = get_content(&content);
+        let mut reply_content = get_content(&content);
 
         let num = rand::thread_rng().gen_range(0..100);
-        let piss = num < 2;
+        let piss = (num < 2) || content.contains("pee in my ass");
 
         if files.is_empty() && content.is_empty() && !piss {
             return;
         }
 
         if piss {
-            content = String::from("*pees in your ass* ") + &content;
+            reply_content += "*pees in your ass* ";
         }
 
         let _ = msg
             .channel_id
             .send_message(&ctx.http, |m| {
-                m.files(files).content(content);
+                m.files(files).content(reply_content);
                 if piss {
                     m.reference_message(&msg);
                 }
@@ -188,7 +224,18 @@ impl EventHandler for Handler {
                         .required(true)
                 })
             });
-            commands.create_application_command(|cmd| cmd.name("pedo").description("pedo"))
+            commands.create_application_command(|cmd| {
+                cmd.name("pedo").description("pedo").create_option(|opt| {
+                    opt.name("file")
+                        .description("The file to send.")
+                        .set_autocomplete(true)
+                        .kind(CommandOptionType::String)
+                        .required(true)
+                })
+            });
+            commands.create_application_command(|cmd| {
+                cmd.name("mrbeast").description("OMG IT'S MRBEAST")
+            })
         })
         .await;
     }
@@ -199,6 +246,11 @@ impl EventHandler for Handler {
                 "uwu" => uwu(&ctx, &cmd).await,
                 "pedo" => pedo(&ctx, &cmd).await,
                 _ => cmd_todo(&ctx, &cmd).await,
+            };
+        } else if let Interaction::Autocomplete(autoc) = interaction {
+            let _ = match autoc.data.name.as_str() {
+                "pedo" => pedo_autoc(&ctx, &autoc).await,
+                _ => (),
             };
         };
     }
