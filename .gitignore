@@ -8,7 +8,6 @@ build/
 # Secret
 token.txt
 
-
 # Added by cargo
 
 /target
