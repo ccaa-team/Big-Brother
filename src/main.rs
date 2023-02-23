@@ -179,12 +179,18 @@ fn reply_content(content: &str) -> String {
     if content.contains("connor") {
         out += ":skull: ";
     };
+    if content.contains("stupid") {
+        let stupid = rand::thread_rng().gen_ratio(1, 10);
+        if stupid {
+            out += "https://www.youtube.com/watch?v=nnkyInAj6Z8 ";
+        }
+    };
     out
 }
 
 fn get_files(content: &str) -> Vec<AttachmentType> {
     let mut out = vec![];
-    if content.contains("rust") {
+    if content.contains("rust") && content.contains("capy64") {
         out.push(AttachmentType::Path(Path::new("assets/rust.mp4")));
     };
     if content.contains("waaa") {
