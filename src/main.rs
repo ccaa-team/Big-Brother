@@ -3,59 +3,35 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
 
+use poise::serenity_prelude::{
+    self as serenity, AttachmentType, CacheHttp, GatewayIntents,
+};
+
+struct Data {}
+type Error = Box<dyn std::error::Error + Send + Sync>;
+type Context<'a> = poise::Context<'a, Data, Error>;
+
 use rand::Rng;
-use serenity::model::application::interaction::application_command::ApplicationCommandInteraction;
-use serenity::model::application::interaction::autocomplete::AutocompleteInteraction;
-use serenity::model::application::interaction::Interaction;
-use serenity::model::gateway::Ready;
-use serenity::model::prelude::command::{Command, CommandOptionType};
-use serenity::model::prelude::interaction::application_command::CommandDataOptionValue;
-use serenity::model::prelude::{AttachmentType, Message, Activity};
 use serenity::model::webhook::Webhook;
-use serenity::prelude::*;
-use serenity::{async_trait, Client};
 use uwu::uwuify;
 
-struct Handler;
-
-async fn mrbeast(
-    ctx: &Context,
-    inter: &ApplicationCommandInteraction,
-) -> Result<(), SerenityError> {
-    inter.create_interaction_response(&ctx.http, |res| {
-        res.kind(serenity::model::prelude::interaction::InteractionResponseType::ChannelMessageWithSource)
-            .interaction_response_data(|msg| msg.content("https://tenor.com/view/mrbeast-ytpmv-rap-battle-squid-game-squid-game-vs-mrbeast-gif-25491394"))
-    }).await?;
-
+#[poise::command(slash_command)]
+async fn mrbeast(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.say("https://tenor.com/view/mrbeast-ytpmv-rap-battle-squid-game-squid-game-vs-mrbeast-gif-25491394").await?;
     Ok(())
 }
-async fn uwu(ctx: &Context, inter: &ApplicationCommandInteraction) -> Result<(), SerenityError> {
-    inter
-        .create_interaction_response(&ctx.http, |res| {
-            res.interaction_response_data(|d| d.content("ok").ephemeral(true))
-        })
-        .await?;
 
-    // Crashing should be impossible because the argument is required.
-    let arg = inter
-        .data
-        .options
-        .get(0)
-        .unwrap()
-        .resolved
-        .as_ref()
-        .unwrap();
+#[poise::command(slash_command)]
+async fn uwu(
+    ctx: Context<'_>,
+    #[description = "Text to uwuify"] text: String,
+) -> Result<(), Error> {
+    let reply = ctx.send(|r| r.content("ok").ephemeral(true)).await?;
 
-    let content = if let CommandDataOptionValue::String(input) = arg {
-        uwuify(input.to_string())
-    } else {
-        panic!();
-    };
-
-    let (name, avatar_url) = if let Some(member) = &inter.member {
+    let (name, avatar_url) = if let Some(member) = ctx.author_member().await {
         (member.display_name().to_string(), member.face())
     } else {
-        let user = &inter.user;
+        let user = ctx.author();
         (user.name.to_owned(), user.face())
     };
 
@@ -69,192 +45,62 @@ async fn uwu(ctx: &Context, inter: &ApplicationCommandInteraction) -> Result<(),
         None
     };
 
-    let channel_id = inter.channel_id;
-    let webhook = match get_webhook(channel_id.webhooks(&ctx.http).await?) {
+    let channel_id = ctx.channel_id();
+    let webhook = match get_webhook(channel_id.webhooks(&ctx.http()).await?) {
         Some(hook) => hook,
-        None => channel_id.create_webhook(&ctx.http, "Uwu webhook").await?,
+        None => {
+            channel_id
+                .create_webhook(&ctx.http(), "Uwu webhook")
+                .await?
+        }
     };
 
+    let content = uwuify(text);
     webhook
-        .execute(&ctx.http, false, |m| {
+        .execute(&ctx.http(), false, |m| {
             m.content(content).avatar_url(avatar_url).username(name)
         })
         .await?;
 
-    inter
-        .delete_original_interaction_response(&ctx.http)
-        .await?;
+    reply.delete(ctx).await?;
 
     Ok(())
 }
 
-async fn pedo(ctx: &Context, inter: &ApplicationCommandInteraction) -> Result<(), SerenityError> {
-    // Crashing should be impossible because the argument is required.
-    let arg = inter
-        .data
-        .options
-        .get(0)
-        .unwrap()
-        .resolved
-        .as_ref()
-        .unwrap();
-
-    let name = if let CommandDataOptionValue::String(input) = arg {
-        input
-    } else {
-        panic!();
-    };
-
-    let file = Path::new(name);
-    inter
-        .create_interaction_response(&ctx.http, |res| {
-            res.interaction_response_data(|d| d.add_file(file))
-        })
-        .await?;
-
-    Ok(())
-}
-
-async fn pedo_autoc(ctx: &Context, autoc: &AutocompleteInteraction) {
+async fn autocomplete_file<'a>(
+    _ctx: Context<'_>,
+    _partial: &'a str,
+) -> impl Iterator<Item = poise::AutocompleteChoice<String>> {
     let paths = fs::read_dir("./assets/pedo").expect("assets folder not found.");
+    let mut autoc_paths = vec![];
+    for path in paths {
+        let path2 = path.unwrap().path();
+        let name = path2.display().to_string();
+        let display = name.replace("./assets/pedo/", "");
 
-    let _ = autoc
-        .create_autocomplete_response(&ctx.http, |res| {
-            for path in paths {
-                let path2 = path.unwrap().path();
-                let name = path2.display().to_string();
-                let display = name.replace("./assets/pedo/", "");
+        let choice = poise::AutocompleteChoice {
+            name: display,
+            value: name,
+        };
+        autoc_paths.push(choice);
+    }
 
-                res.add_string_choice(display, name);
-            }
-            res
-        })
-        .await;
+    autoc_paths.into_iter()
 }
 
-async fn cmd_todo(
-    ctx: &Context,
-    inter: &ApplicationCommandInteraction,
-) -> Result<(), SerenityError> {
-    inter
-        .create_interaction_response(&ctx.http, |res| {
-            res.kind(serenity::model::prelude::interaction::InteractionResponseType::ChannelMessageWithSource)
-                .interaction_response_data(|msg| {
-                    msg.content("This is probably still being worked on")
-                        .ephemeral(true)
-                })
-        })
+#[poise::command(slash_command)]
+async fn pedo(
+    ctx: Context<'_>,
+    #[description = "File to send"]
+    #[autocomplete = "autocomplete_file"]
+    name: String,
+) -> Result<(), Error> {
+    let file = Path::new(&name);
+
+    ctx.send(|r| r.attachment(serenity::AttachmentType::Path(file)))
         .await?;
 
     Ok(())
-}
-
-#[async_trait]
-impl EventHandler for Handler {
-    async fn message(&self, ctx: Context, msg: Message) {
-        if msg.author.bot {
-            return;
-        }
-
-        let get_files = |text: &str| {
-            let mut out = vec![];
-            if text.contains("rust") || text.contains("iron oxide") || text.contains("fe203") {
-                out.push(AttachmentType::Path(Path::new("assets/rust.mp4")));
-            }
-            if text.contains("waaa") {
-                out.push(AttachmentType::Path(Path::new("assets/waaa.mp4")));
-            }
-            out
-        };
-
-        let get_content = |text: &str| {
-            let mut out = String::from("");
-
-            if text.contains("moyai") || text.contains("🗿") {
-                out += "🗿 ";
-            }
-            if text.contains("balls") {
-                out += "<:whatwedotoyourballs:1023352899075571752> ";
-            }
-            if text.contains("connor") {
-                out += ":skull: "
-            }
-
-            out
-        };
-
-        let content = msg.content.to_lowercase();
-
-        let files = get_files(&content);
-        let mut reply_content = get_content(&content);
-
-        let num = rand::thread_rng().gen_range(0..100);
-        let piss = (num < 2) || content.contains("pee in my ass");
-
-        if files.is_empty() && content.is_empty() && !piss {
-            return;
-        }
-
-        if piss {
-            reply_content += "*pees in your ass* ";
-        }
-
-        let _ = msg
-            .channel_id
-            .send_message(&ctx.http, |m| {
-                m.files(files).content(reply_content);
-                if piss {
-                    m.reference_message(&msg);
-                }
-                m
-            })
-            .await;
-    }
-    async fn ready(&self, ctx: Context, _ready: Ready) {
-        ctx.set_activity(Activity::playing("with VirtIO's balls")).await;
-        let _ = Command::set_global_application_commands(&ctx.http, |commands| {
-            commands.create_application_command(|cmd| {
-                cmd.name("mrbeast").description("OMG IT'S MRBEAST'")
-            });
-            commands.create_application_command(|cmd| {
-                cmd.name("uwu").description("uwu").create_option(|option| {
-                    option
-                        .name("text")
-                        .description("The text to uwuify")
-                        .kind(CommandOptionType::String)
-                        .required(true)
-                })
-            });
-            commands.create_application_command(|cmd| {
-                cmd.name("pedo").description("pedo").create_option(|opt| {
-                    opt.name("file")
-                        .description("The file to send.")
-                        .set_autocomplete(true)
-                        .kind(CommandOptionType::String)
-                        .required(true)
-                })
-            });
-            commands.create_application_command(|cmd| {
-                cmd.name("mrbeast").description("OMG IT'S MRBEAST")
-            })
-        })
-        .await;
-    }
-    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(cmd) = interaction {
-            let _ = match cmd.data.name.as_str() {
-                "mrbeast" => mrbeast(&ctx, &cmd).await,
-                "uwu" => uwu(&ctx, &cmd).await,
-                "pedo" => pedo(&ctx, &cmd).await,
-                _ => cmd_todo(&ctx, &cmd).await,
-            };
-        } else if let Interaction::Autocomplete(autoc) = interaction {
-            let _ = match autoc.data.name.as_str() {
-                "pedo" => pedo_autoc(&ctx, &autoc).await,
-                _ => (),
-            };
-        };
-    }
 }
 
 #[tokio::main]
@@ -271,10 +117,78 @@ async fn main() {
 
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
-    let mut client = Client::builder(&token, intents)
-        .event_handler(Handler)
-        .await
-        .expect("Error creating client.");
+    let framework = poise::Framework::builder()
+        .options(poise::FrameworkOptions {
+            commands: vec![mrbeast(), uwu(), pedo()],
+            event_handler: |ctx, event, _framework, _user_data| {
+                Box::pin(async move {
+                    match event {
+                        poise::Event::Message { new_message } => {
+                            if new_message.author.bot {
+                                return Ok(());
+                            };
+                            let content = new_message.content.to_lowercase();
+                            let files = get_files(&content);
+                            let mut reply_content = reply_content(&content);
 
-    client.start().await.unwrap();
+                            let piss = rand::thread_rng().gen_ratio(1, 50);
+
+                            if piss {
+                                reply_content += "*pees in your ass*";
+                            };
+
+                            if files.is_empty() && reply_content.is_empty() {
+                                return Ok(());
+                            };
+
+                            new_message.channel_id.send_message(&ctx.http, |m| {
+                                m.files(files).content(reply_content);
+                                if piss {
+                                    m.reference_message(new_message);
+                                };
+                                m
+                            }).await?;
+                        },
+                        _ => (),
+                    };
+                    Ok(())
+                })
+            },
+            ..Default::default()
+        })
+        .token(token)
+        .intents(intents)
+        .setup(|ctx, _ready, frm| {
+            Box::pin(async move {
+                poise::builtins::register_globally(ctx, &frm.options().commands).await?;
+                Ok(Data {})
+            })
+        });
+
+    framework.run().await.unwrap();
+}
+
+fn reply_content(content: &str) -> String {
+    let mut out = String::from("");
+    if content.contains("moyai") || content.contains("🗿") {
+        out += "🗿";
+    };
+    if content.contains("balls") {
+        out += "<:whatwedotoyourballs:1023352899075571752> ";
+    };
+    if content.contains("connor") {
+        out += ":skull: ";
+    };
+    out
+}
+
+fn get_files(content: &str) -> Vec<AttachmentType> {
+    let mut out = vec![];
+    if content.contains("rust") {
+        out.push(AttachmentType::Path(Path::new("assets/rust.mp4")));
+    };
+    if content.contains("waaa") {
+        out.push(AttachmentType::Path(Path::new("assets/rust.mp4")));
+    };
+    out
 }

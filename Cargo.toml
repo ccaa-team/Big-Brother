@@ -6,6 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+poise = "0.5.2"
 rand = "0.8.5"
-serenity = {version = "0.11.5", default-features = false, features = ["client", "gateway", "rustls_backend", "model"]}
 tokio = { version = "1.25.0", features = ["rt-multi-thread"] }
