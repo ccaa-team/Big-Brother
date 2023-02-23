@@ -103,6 +103,14 @@ async fn pedo(
     Ok(())
 }
 
+#[poise::command(slash_command)]
+async fn capy64(
+    ctx: Context<'_>
+) -> Result<(), Error> {
+    ctx.say("https://discord.gg/ZCXKGTM6Mm").await?;
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
     let token = {
@@ -119,7 +127,7 @@ async fn main() {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![mrbeast(), uwu(), pedo()],
+            commands: vec![mrbeast(), uwu(), pedo(), capy64()],
             event_handler: |ctx, event, _framework, _user_data| {
                 Box::pin(async move {
                     match event {
