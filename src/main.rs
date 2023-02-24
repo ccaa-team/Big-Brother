@@ -111,6 +111,14 @@ async fn capy64(
     Ok(())
 }
 
+#[poise::command(slash_command)]
+async fn test(
+    ctx: Context<'_>
+) -> Result<(), Error> {
+    ctx.say("Hello World").await?;
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
     let token = {
