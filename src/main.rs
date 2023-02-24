@@ -3,9 +3,7 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
 
-use poise::serenity_prelude::{
-    self as serenity, AttachmentType, CacheHttp, GatewayIntents,
-};
+use poise::serenity_prelude::{self as serenity, AttachmentType, CacheHttp, GatewayIntents};
 
 struct Data {}
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -18,6 +16,53 @@ use uwu::uwuify;
 #[poise::command(slash_command)]
 async fn mrbeast(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say("https://tenor.com/view/mrbeast-ytpmv-rap-battle-squid-game-squid-game-vs-mrbeast-gif-25491394").await?;
+    Ok(())
+}
+
+#[poise::command(context_menu_command = "uwuify")]
+async fn uwu_context(
+    ctx: Context<'_>,
+    #[description = "Text to uwuify"] msg: serenity::Message,
+) -> Result<(), Error> {
+    let reply = ctx.send(|r| r.content("ok").ephemeral(true)).await?;
+
+    let (name, avatar_url) = if let Some(member) = ctx.author_member().await {
+        (member.display_name().to_string(), member.face())
+    } else {
+        let user = ctx.author();
+        (user.name.to_owned(), user.face())
+    };
+
+    let get_webhook = |webhooks: Vec<Webhook>| -> Option<Webhook> {
+        for webhook in webhooks {
+            if let Some(_) = &webhook.token {
+                return Some(webhook);
+            }
+        }
+
+        None
+    };
+
+    let channel_id = ctx.channel_id();
+    let webhook = match get_webhook(channel_id.webhooks(&ctx.http()).await?) {
+        Some(hook) => hook,
+        None => {
+            channel_id
+                .create_webhook(&ctx.http(), "Uwu webhook")
+                .await?
+        }
+    };
+
+    let text = msg.content_safe(&ctx.cache().unwrap());
+    let content = uwuify(text);
+    webhook
+        .execute(&ctx.http(), false, |m| {
+            m.content(content).avatar_url(avatar_url).username(name)
+        })
+        .await?;
+
+    reply.delete(ctx).await?;
+
     Ok(())
 }
 
@@ -104,10 +149,36 @@ async fn pedo(
 }
 
 #[poise::command(slash_command)]
-async fn capy64(
-    ctx: Context<'_>
-) -> Result<(), Error> {
+async fn capy64(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say("https://discord.gg/ZCXKGTM6Mm").await?;
+    Ok(())
+}
+
+#[poise::command(
+    context_menu_command = "Embrace",
+    guild_only,
+    required_permissions = "MANAGE_ROLES"
+)]
+async fn embrace(ctx: Context<'_>, mem: serenity::User) -> Result<(), Error> {
+    let gid = if let Some(gid) = ctx.guild_id() {
+        gid
+    } else {
+        unreachable!();
+    };
+
+    if gid == serenity::GuildId(1023332212403351563) {
+        let mut member = gid.member(&ctx.http(), mem.id).await?;
+        member.add_role(&ctx.http(), 1023334181952049203).await?;
+    } else {
+        ctx.send(|m| {
+            m.content("Sorry, but this command only works in a specific guild.")
+                .ephemeral(true)
+        })
+        .await?;
+    }
+
+    ctx.send(|m| m.content("Done!").ephemeral(true)).await?;
+
     Ok(())
 }
 
@@ -125,9 +196,11 @@ async fn main() {
 
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
+    let commands = vec![capy64(), mrbeast(), uwu(), uwu_context(), pedo()];
+
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![mrbeast(), uwu(), pedo(), capy64()],
+            commands,
             event_handler: |ctx, event, _framework, _user_data| {
                 Box::pin(async move {
                     match event {
@@ -149,14 +222,17 @@ async fn main() {
                                 return Ok(());
                             };
 
-                            new_message.channel_id.send_message(&ctx.http, |m| {
-                                m.files(files).content(reply_content);
-                                if piss {
-                                    m.reference_message(new_message);
-                                };
-                                m
-                            }).await?;
-                        },
+                            new_message
+                                .channel_id
+                                .send_message(&ctx.http, |m| {
+                                    m.files(files).content(reply_content);
+                                    if piss {
+                                        m.reference_message(new_message);
+                                    };
+                                    m
+                                })
+                                .await?;
+                        }
                         _ => (),
                     };
                     Ok(())
