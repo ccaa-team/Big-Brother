@@ -139,7 +139,7 @@ async fn main() {
                             let files = get_files(&content);
                             let mut reply_content = reply_content(&content);
 
-                            let piss = rand::thread_rng().gen_ratio(1, 50);
+                            let piss = rand::thread_rng().gen_ratio(1, 100);
 
                             if piss {
                                 reply_content += "*pees in your ass*";
