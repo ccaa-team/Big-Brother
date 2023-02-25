@@ -135,6 +135,16 @@ async fn embrace(ctx: Context<'_>, mem: serenity::User) -> Result<(), Error> {
     Ok(())
 }
 
+#[poise::command(slash_command)]
+async fn e621(
+    ctx: Context<'_>,
+    #[description = "List of tags separated by commas"] tags: String,
+) -> Result<(), Error> {
+    ctx.say("https://tenor.com/view/4k-caught-caught-in4k-caught-in8k-8k-gif-20014426")
+        .await?;
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
     let token = {
@@ -149,7 +159,7 @@ async fn main() {
 
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
-    let commands = vec![capy64(), mrbeast(), uwu(), pedo(), embrace()];
+    let commands = vec![capy64(), mrbeast(), uwu(), pedo(), embrace(), e621()];
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
