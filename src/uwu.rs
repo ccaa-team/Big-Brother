@@ -1,50 +1,53 @@
 use rand::prelude::*;
 
+static EMOJIS: [&str; 32] = [
+    " rawr x3",
+    " OwO",
+    " UwU",
+    " o.O",
+    " -.-",
+    " >w<",
+    " (⑅˘꒳˘)",
+    " (ꈍᴗꈍ)",
+    " (˘ω˘)",
+    " (U ᵕ U❁)",
+    " σωσ",
+    " òωó",
+    " (///ˬ///✿)",
+    " (U ﹏ U)",
+    " ( ͡o ω ͡o )",
+    " ʘwʘ",
+    " :3",
+    " :3",
+    " XD",
+    " nyaa\\~\\~",
+    " mya",
+    " >_<",
+    " 😳",
+    " 🥺",
+    " 😳😳😳",
+    " rawr",
+    " ^^",
+    " ^^;;",
+    " (ˆ ﻌ ˆ)♡",
+    " ^•ﻌ•^",
+    " /(^•ω•^)",
+    " (✿oωo)",
+];
+
 fn random_emoji() -> String {
-    let emojis: [String; 32] = [
-        " rawr x3".to_owned(),
-        " OwO".to_owned(),
-        " UwU".to_owned(),
-        " o.O".to_owned(),
-        " -.-".to_owned(),
-        " >w<".to_owned(),
-        " (⑅˘꒳˘)".to_owned(),
-        " (ꈍᴗꈍ)".to_owned(),
-        " (˘ω˘)".to_owned(),
-        " (U ᵕ U❁)".to_owned(),
-        " σωσ".to_owned(),
-        " òωó".to_owned(),
-        " (///ˬ///✿)".to_owned(),
-        " (U ﹏ U)".to_owned(),
-        " ( ͡o ω ͡o )".to_owned(),
-        " ʘwʘ".to_owned(),
-        " :3".to_owned(),
-        " :3".to_owned(),
-        " XD".to_owned(),
-        " nyaa\\~\\~".to_owned(),
-        " mya".to_owned(),
-        " >_<".to_owned(),
-        " 😳".to_owned(),
-        " 🥺".to_owned(),
-        " 😳😳😳".to_owned(),
-        " rawr".to_owned(),
-        " ^^".to_owned(),
-        " ^^;;".to_owned(),
-        " (ˆ ﻌ ˆ)♡".to_owned(),
-        " ^•ﻌ•^".to_owned(),
-        " /(^•ω•^)".to_owned(),
-        " (✿oωo)".to_owned(),
-    ];
     let idx = rand::thread_rng().gen_range(1..32);
-    return emojis[idx].clone();
+    return EMOJIS[idx].to_string();
 }
 
 static VOWELS: [char; 5] = ['a', 'e', 'i', 'u', 'o'];
 
 fn uwu_word(word: &str) -> Option<String> {
-    if word.starts_with("http") || word.len() == 0 {
+    if word.len() == 0 {
         return None;
-    }
+    } else if word.starts_with("http") {
+        return Some(word.to_string());
+    };
 
     let last_char = word.chars().last().unwrap();
 

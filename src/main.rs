@@ -19,53 +19,6 @@ async fn mrbeast(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-#[poise::command(context_menu_command = "uwuify")]
-async fn uwu_context(
-    ctx: Context<'_>,
-    #[description = "Text to uwuify"] msg: serenity::Message,
-) -> Result<(), Error> {
-    let reply = ctx.send(|r| r.content("ok").ephemeral(true)).await?;
-
-    let (name, avatar_url) = if let Some(member) = ctx.author_member().await {
-        (member.display_name().to_string(), member.face())
-    } else {
-        let user = ctx.author();
-        (user.name.to_owned(), user.face())
-    };
-
-    let get_webhook = |webhooks: Vec<Webhook>| -> Option<Webhook> {
-        for webhook in webhooks {
-            if let Some(_) = &webhook.token {
-                return Some(webhook);
-            }
-        }
-
-        None
-    };
-
-    let channel_id = ctx.channel_id();
-    let webhook = match get_webhook(channel_id.webhooks(&ctx.http()).await?) {
-        Some(hook) => hook,
-        None => {
-            channel_id
-                .create_webhook(&ctx.http(), "Uwu webhook")
-                .await?
-        }
-    };
-
-    let text = msg.content_safe(&ctx.cache().unwrap());
-    let content = uwuify(text);
-    webhook
-        .execute(&ctx.http(), false, |m| {
-            m.content(content).avatar_url(avatar_url).username(name)
-        })
-        .await?;
-
-    reply.delete(ctx).await?;
-
-    Ok(())
-}
-
 #[poise::command(slash_command)]
 async fn uwu(
     ctx: Context<'_>,
