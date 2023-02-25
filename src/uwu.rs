@@ -64,7 +64,7 @@ fn uwu_word(word: &str) -> Option<String> {
     }
 
     let end = match last_char {
-        '.' | '!' | '?' | '|' => random_emoji(),
+        '.' | '!' | '?' | ',' => random_emoji(),
         _ => "".to_string(),
     };
 
