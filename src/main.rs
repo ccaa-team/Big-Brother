@@ -149,7 +149,7 @@ async fn main() {
 
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
-    let commands = vec![capy64(), mrbeast(), uwu(), pedo()];
+    let commands = vec![capy64(), mrbeast(), uwu(), pedo(), embrace()];
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
