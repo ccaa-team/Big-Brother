@@ -241,7 +241,7 @@ fn get_files(content: &str) -> Vec<AttachmentType> {
         out.push(AttachmentType::Path(Path::new("assets/rust.mp4")));
     };
     if content.contains("waaa") {
-        out.push(AttachmentType::Path(Path::new("assets/rust.mp4")));
+        out.push(AttachmentType::Path(Path::new("assets/waaa.mp4")));
     };
     out
 }
