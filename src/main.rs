@@ -64,43 +64,6 @@ async fn uwu(
 
     Ok(())
 }
-
-async fn autocomplete_file<'a>(
-    _ctx: Context<'_>,
-    _partial: &'a str,
-) -> impl Iterator<Item = poise::AutocompleteChoice<String>> {
-    let paths = fs::read_dir("./assets/pedo").expect("assets folder not found.");
-    let mut autoc_paths = vec![];
-    for path in paths {
-        let path2 = path.unwrap().path();
-        let name = path2.display().to_string();
-        let display = name.replace("./assets/pedo/", "");
-
-        let choice = poise::AutocompleteChoice {
-            name: display,
-            value: name,
-        };
-        autoc_paths.push(choice);
-    }
-
-    autoc_paths.into_iter()
-}
-
-#[poise::command(slash_command)]
-async fn pedo(
-    ctx: Context<'_>,
-    #[description = "File to send"]
-    #[autocomplete = "autocomplete_file"]
-    name: String,
-) -> Result<(), Error> {
-    let file = Path::new(&name);
-
-    ctx.send(|r| r.attachment(serenity::AttachmentType::Path(file)))
-        .await?;
-
-    Ok(())
-}
-
 #[poise::command(slash_command)]
 async fn capy64(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say("https://discord.gg/ZCXKGTM6Mm").await?;

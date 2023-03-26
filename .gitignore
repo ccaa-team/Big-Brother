@@ -5,8 +5,9 @@ build/
 # MacOS Cache
 .DS_Store
 
-# Secret
+# Secrets
 .env
+token.txt
 
 # Added by cargo
 

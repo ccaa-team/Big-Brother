@@ -64,7 +64,7 @@ fn uwu_word(word: &str) -> Option<String> {
     }
 
     let end = {
-        if last_char.is_ascii_punctuation() || rand::thread_rng().gen_ratio(1, 6)  {
+        if last_char.is_ascii_punctuation() || rand::thread_rng().gen_ratio(1, 6) {
             random_emoji()
         } else {
             "".to_string()
@@ -73,7 +73,7 @@ fn uwu_word(word: &str) -> Option<String> {
 
     let first_char = out.chars().next().unwrap();
 
-    if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_ratio(0,4) {
+    if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_ratio(0, 4) {
         let mut tmp = String::from("");
         tmp.push(first_char);
         tmp.push('-');
