@@ -21,7 +21,7 @@ static EMOJIS: [&str; 32] = [
     " :3",
     " XD",
     " nyaa\\~\\~",
-    " mya",
+    "~",
     " >_<",
     " 😳",
     " 🥺",
@@ -63,14 +63,17 @@ fn uwu_word(word: &str) -> Option<String> {
         out = out.replace(&from, &to);
     }
 
-    let end = match last_char {
-        '.' | '!' | '?' | ',' => random_emoji(),
-        _ => "".to_string(),
+    let end = {
+        if last_char.is_ascii_punctuation() || rand::thread_rng().gen_ratio(1, 6)  {
+            random_emoji()
+        } else {
+            "".to_string()
+        }
     };
 
     let first_char = out.chars().next().unwrap();
 
-    if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_range(0..4) == 0 {
+    if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_ratio(0,4) {
         let mut tmp = String::from("");
         tmp.push(first_char);
         tmp.push('-');
