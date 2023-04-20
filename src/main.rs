@@ -1,16 +1,14 @@
 mod uwu;
-use std::fs::{self, File};
-use std::io::Read;
-use std::path::Path;
 
-use poise::serenity_prelude::{self as serenity, AttachmentType, CacheHttp, GatewayIntents};
+use poise::serenity_prelude::{
+    self as serenity, AttachmentType, CacheHttp, GatewayIntents, Message,
+};
 
 struct Data {}
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
 use rand::Rng;
-use serenity::model::webhook::Webhook;
 use uwu::uwuify;
 
 #[poise::command(slash_command)]
@@ -26,26 +24,23 @@ async fn uwu(
 ) -> Result<(), Error> {
     let reply = ctx.send(|r| r.content("ok").ephemeral(true)).await?;
 
-    let (name, avatar_url) = if let Some(member) = ctx.author_member().await {
-        (member.display_name().to_string(), member.face())
-    } else {
-        let user = ctx.author();
-        (user.name.to_owned(), user.face())
-    };
-
-    let get_webhook = |webhooks: Vec<Webhook>| -> Option<Webhook> {
-        for webhook in webhooks {
-            if let Some(_) = &webhook.token {
-                return Some(webhook);
-            }
-        }
-
-        None
-    };
+    let (name, avatar_url) = ctx
+        .author_member()
+        .await
+        .map(|member| (member.display_name().to_string(), member.face()))
+        .unwrap_or_else(|| {
+            let user = ctx.author();
+            (user.name.to_owned(), user.face())
+        });
 
     let channel_id = ctx.channel_id();
-    let webhook = match get_webhook(channel_id.webhooks(&ctx.http()).await?) {
-        Some(hook) => hook,
+    let webhook = match channel_id
+        .webhooks(&ctx.http())
+        .await?
+        .into_iter()
+        .find(|w| w.token.is_some())
+    {
+        Some(webhook) => webhook,
         None => {
             channel_id
                 .create_webhook(&ctx.http(), "Uwu webhook")
@@ -53,10 +48,11 @@ async fn uwu(
         }
     };
 
-    let content = uwuify(text);
     webhook
         .execute(&ctx.http(), false, |m| {
-            m.content(content).avatar_url(avatar_url).username(name)
+            m.content(uwuify(text))
+                .avatar_url(avatar_url)
+                .username(name)
         })
         .await?;
 
@@ -64,6 +60,7 @@ async fn uwu(
 
     Ok(())
 }
+
 #[poise::command(slash_command)]
 async fn capy64(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say("https://discord.gg/ZCXKGTM6Mm").await?;
@@ -110,15 +107,17 @@ async fn e621(
 
 #[tokio::main]
 async fn main() {
-    let token = {
-        let mut f = File::open("token.txt").expect("token.txt not found");
-        let mut s = String::new();
-        match f.read_to_string(&mut s) {
-            Ok(_) => (),
-            Err(_) => panic!("Failed to read token."),
-        };
-        s
-    };
+    //let token = {
+    //    let mut f = File::open("token.txt").expect("token.txt not found");
+    //    let mut s = String::new();
+    //    match f.read_to_string(&mut s) {
+    //        Ok(_) => (),
+    //        Err(_) => panic!("Failed to read token."),
+    //    };
+    //    s
+    //};
+
+    let token = include_str!("../token.txt");
 
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
@@ -131,33 +130,7 @@ async fn main() {
                 Box::pin(async move {
                     match event {
                         poise::Event::Message { new_message } => {
-                            if new_message.author.bot {
-                                return Ok(());
-                            };
-                            let content = new_message.content.to_lowercase();
-                            let files = get_files(&content);
-                            let mut reply_content = reply_content(&content);
-
-                            let piss = rand::thread_rng().gen_ratio(1, 100);
-
-                            if piss {
-                                reply_content += "*pees in your ass*";
-                            };
-
-                            if files.is_empty() && reply_content.is_empty() {
-                                return Ok(());
-                            };
-
-                            new_message
-                                .channel_id
-                                .send_message(&ctx.http, |m| {
-                                    m.files(files).content(reply_content);
-                                    if piss {
-                                        m.reference_message(new_message);
-                                    };
-                                    m
-                                })
-                                .await?;
+                            message_handler(ctx, new_message).await?;
                         }
                         _ => (),
                     };
@@ -176,6 +149,35 @@ async fn main() {
         });
 
     framework.run().await.unwrap();
+}
+
+async fn message_handler(ctx: &serenity::Context, msg: &Message) -> Result<(), Error> {
+    if msg.author.bot {
+        return Ok(());
+    }
+    let content = msg.content.to_lowercase();
+    let files = get_files(&content);
+    let mut reply_content = reply_content(&content);
+
+    let piss = rand::thread_rng().gen_ratio(1, 100);
+    if piss {
+        reply_content += "# *pees in your ass*";
+    }
+
+    if files.is_empty() && reply_content.is_empty() {
+        return Ok(());
+    }
+
+    msg.channel_id
+        .send_message(&ctx.http(), |m| {
+            m.files(files).content(reply_content);
+            if piss {
+                m.reference_message(msg);
+            };
+            m
+        })
+        .await?;
+    Ok(())
 }
 
 fn reply_content(content: &str) -> String {
@@ -201,10 +203,16 @@ fn reply_content(content: &str) -> String {
 fn get_files(content: &str) -> Vec<AttachmentType> {
     let mut out = vec![];
     if content.contains("rust") && content.contains("capy64") {
-        out.push(AttachmentType::Path(Path::new("assets/rust.mp4")));
+        out.push(AttachmentType::Bytes {
+            data: std::borrow::Cow::Borrowed(include_bytes!("../assets/rust.mp4")),
+            filename: "rust.mp4".to_string(),
+        });
     };
     if content.contains("waaa") {
-        out.push(AttachmentType::Path(Path::new("assets/waaa.mp4")));
+        out.push(AttachmentType::Bytes {
+            data: std::borrow::Cow::Borrowed(include_bytes!("../assets/waaa.mp4")),
+            filename: "waaa.mp4".to_string(),
+        });
     };
     out
 }
