@@ -119,7 +119,9 @@ async fn main() {
 
     let token = include_str!("../token.txt");
 
-    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
+    let intents = GatewayIntents::GUILD_MESSAGES
+        | GatewayIntents::MESSAGE_CONTENT
+        | GatewayIntents::GUILD_MESSAGE_REACTIONS;
 
     let commands = vec![capy64(), mrbeast(), uwu(), embrace(), e621()];
 
@@ -131,6 +133,17 @@ async fn main() {
                     match event {
                         poise::Event::Message { new_message } => {
                             message_handler(ctx, new_message).await?;
+                        }
+                        poise::Event::ReactionAdd { add_reaction } => {
+                            let is_moyai = match &add_reaction.emoji {
+                                #[allow(unused_variables)]
+                                serenity::ReactionType::Custom { animated, id, name } => {
+                                    name.as_ref().is_some_and(|x| x.contains("moyai"))
+                                }
+                                serenity::ReactionType::Unicode(char) => char == "🗿",
+                                _ => false,
+                            };
+                            println!("{}", is_moyai);
                         }
                         _ => (),
                     };
