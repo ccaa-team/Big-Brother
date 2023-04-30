@@ -1,5 +1,5 @@
 with import <nixpkgs> {};
 
 mkShell {
-  buildInputs = [ pkg-config openssl ]; 
+  buildInputs = [ pkg-config openssl sqlitebrowser ];
 }

@@ -8,6 +8,7 @@ build/
 # Secrets
 .env
 token.txt
+moyai*
 
 # Added by cargo
 
