@@ -1,5 +1,16 @@
-with import <nixpkgs> {};
+with import <nixpkgs> { };
 
-mkShell {
-  buildInputs = [ cargo-cross pkg-config openssl ];
+let
+  moz_overlay = import (builtins.fetchTarball
+    "https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz");
+  nixpkgs = import <nixpkgs> { overlays = [ moz_overlay ]; };
+in with nixpkgs;
+stdenv.mkDerivation {
+  name = "autovirt_env";
+  buildInputs = [
+    pkg-config
+    # to use the latest nightly:
+    nixpkgs.latest.rustChannels.stable.rust
+    openssl
+  ];
 }
