@@ -1,7 +1,7 @@
 use crate::globals::THRESHOLD;
+use crate::globals::DB_URL;
 
 use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
-const DB_URL: &str = "sqlite://moyai.db";
 
 async fn create_db() {
     match Sqlite::create_database(DB_URL).await {

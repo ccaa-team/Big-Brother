@@ -6,8 +6,6 @@ build/
 .DS_Store
 
 # Secrets
-.env
-token.txt
 moyai*
 
 # Added by cargo

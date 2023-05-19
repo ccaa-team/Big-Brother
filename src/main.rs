@@ -2,6 +2,8 @@ mod db;
 mod globals;
 mod uwu;
 
+use std::{fs::File, io::Read, path::Path};
+
 use poise::serenity_prelude::{
     self as serenity, AttachmentType, CacheHttp, Channel, GatewayIntents, Message, Reaction,
 };
@@ -137,17 +139,15 @@ async fn e621(
 async fn main() {
     db::init().await.unwrap();
 
-    //let token = {
-    //    let mut f = File::open("token.txt").expect("token.txt not found");
-    //    let mut s = String::new();
-    //    match f.read_to_string(&mut s) {
-    //        Ok(_) => (),
-    //        Err(_) => panic!("Failed to read token."),
-    //    };
-    //    s
-    //};
-
-    let token = include_str!("../token.txt");
+    let token = {
+        let mut f = File::open("./token.txt").expect("token.txt not found");
+        let mut s = String::new();
+        match f.read_to_string(&mut s) {
+            Ok(_) => (),
+            Err(_) => panic!("Failed to read token."),
+        };
+        s
+    };
 
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT
@@ -194,8 +194,6 @@ async fn reaction_handler(ctx: &serenity::Context, react: &Reaction) -> Result<(
     let is_moyai = match &react.emoji {
         #[allow(unused_variables)]
         serenity::ReactionType::Unicode(char) => char == "🗿",
-        #[allow(unused_variables)]
-        serenity::ReactionType::Custom { animated, id, name } => false,
         _ => false,
     };
     if react.channel_id == CURSED_BOARD {
@@ -343,16 +341,10 @@ fn reply_content(content: &str) -> String {
 fn get_files(content: &str) -> Vec<AttachmentType> {
     let mut out = vec![];
     if content.contains("rust") && content.contains("capy64") {
-        out.push(AttachmentType::Bytes {
-            data: std::borrow::Cow::Borrowed(include_bytes!("../assets/rust.mp4")),
-            filename: "rust.mp4".to_string(),
-        });
+        out.push(AttachmentType::Path(Path::new("./assets/rust.mp4")));
     };
     if content.contains("waaa") {
-        out.push(AttachmentType::Bytes {
-            data: std::borrow::Cow::Borrowed(include_bytes!("../assets/waaa.mp4")),
-            filename: "waaa.mp4".to_string(),
-        });
+        out.push(AttachmentType::Path(Path::new("./assets/waaa.mp4")));
     };
     out
 }
