@@ -37,13 +37,13 @@ static EMOJIS: [&str; 32] = [
 
 fn random_emoji() -> String {
     let idx = rand::thread_rng().gen_range(1..32);
-    return EMOJIS[idx].to_string();
+    EMOJIS[idx].to_string()
 }
 
 static VOWELS: [char; 5] = ['a', 'e', 'i', 'u', 'o'];
 
 fn uwu_word(word: &str) -> Option<String> {
-    if word.len() == 0 {
+    if word.is_empty() {
         return None;
     } else if word.starts_with("http") {
         return Some(word.to_string());
@@ -51,7 +51,7 @@ fn uwu_word(word: &str) -> Option<String> {
 
     let last_char = word.chars().last().unwrap();
 
-    let mut out = word.replace("l", "w").replace("r", "w");
+    let mut out = word.replace(['l', 'r'], "w");
 
     for vowel in VOWELS.iter() {
         let mut from = String::from("n");
@@ -89,7 +89,7 @@ fn uwu_word(word: &str) -> Option<String> {
 pub fn uwuify(text: String) -> String {
     let low = text.to_lowercase();
 
-    let split = low.split(" ");
+    let split = low.split(' ');
     let mut out = String::from("");
 
     for word in split.into_iter() {

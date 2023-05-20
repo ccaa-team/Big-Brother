@@ -5,13 +5,13 @@ mod uwu;
 use std::{fs::File, io::Read, path::Path};
 
 use poise::serenity_prelude::{
-    self as serenity, AttachmentType, CacheHttp, Channel, GatewayIntents, Message, Reaction,
+    self as serenity, AttachmentType, CacheHttp, Channel, ChannelId, GatewayIntents, Message, Reaction,
 };
 
 use globals::*;
 
 struct Data {
-    pub bot_pfp: Option<String>
+    pub bot_pfp: Option<String>,
 }
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -75,22 +75,60 @@ async fn capy64(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
+#[derive(Default)]
+struct Entry {
+    pub author: String,
+    pub content: String,
+    pub jump: String,
+    pub place: u8,
+    pub count: u8,
+}
+
 #[poise::command(slash_command)]
 async fn top10moyai(ctx: Context<'_>) -> Result<(), Error> {
     let list = db::list().await?;
 
-    let mut i = 1;
+    let list = async {
+        let mut out = vec![];
+        let mut i = 1;
+        for e in list.iter() {
+            if let (Ok(chn_id), Ok(msg_id)) = (e.channel_id.parse(), e.msg_id.parse::<u64>()) {
+                let channel = ChannelId(chn_id);
+                if let Ok(msg) = channel.message(ctx.http(), msg_id).await {
+                    let author = msg.author.name.clone();
+                    let content = msg.content.clone();
+                    let jump = msg.link().clone();
+                    let place = i;
+                    let count = e.moyai_count;
+                    let val = Entry {
+                        author,
+                        content,
+                        jump,
+                        place,
+                        count,
+                    };
+                    out.push(val);
+                }
+                i += 1;
+            };
+        }
+        out
+    }
+    .await;
+
     ctx.send(|m| {
         m.embed(|e| {
-            for entry in list {
+            for entry in list.iter() {
                 e.field(
-                    format!("#{}: {} :moyai:", i, entry.count),
-                    format!("[Jump]({})", entry.link),
-                    true,
+                    format!(
+                        "{}: #{} - {}:moyai:",
+                        entry.author, entry.place, entry.count
+                    ),
+                    format!("{}\n[Jump]({})", entry.content, entry.jump),
+                    false,
                 );
-                i += 1;
             }
-            e
+            e.color(serenity::Colour(0xAA00BB))
         })
     })
     .await?;
@@ -189,16 +227,18 @@ async fn main() {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &frm.options().commands).await?;
                 let bot_pfp = ready.user.avatar_url();
-                Ok(Data {
-                    bot_pfp
-                })
+                Ok(Data { bot_pfp })
             })
         });
 
     framework.run().await.unwrap();
 }
 
-async fn reaction_handler(ctx: &serenity::Context, react: &Reaction, user_data: &Data) -> Result<(), Error> {
+async fn reaction_handler(
+    ctx: &serenity::Context,
+    react: &Reaction,
+    user_data: &Data,
+) -> Result<(), Error> {
     let is_moyai = match &react.emoji {
         #[allow(unused_variables)]
         serenity::ReactionType::Unicode(char) => char == "🗿",
@@ -242,8 +282,7 @@ async fn reaction_handler(ctx: &serenity::Context, react: &Reaction, user_data: 
                             "".to_string()
                         }
                     };
-                    let color = 
-                        serenity::Colour(0xAA00BB);
+                    let color = serenity::Colour(0xAA00BB);
                     let jump_url = message.link();
                     let msg = ch
                         .send_message(ctx.http(), |m| {
@@ -265,6 +304,7 @@ async fn reaction_handler(ctx: &serenity::Context, react: &Reaction, user_data: 
                         .await?;
                     db::set(
                         react.message_id.to_string(),
+                        react.channel_id.to_string(),
                         msg.id.to_string(),
                         msg.link(),
                         count,
@@ -274,7 +314,14 @@ async fn reaction_handler(ctx: &serenity::Context, react: &Reaction, user_data: 
             }
         } else {
             let msg = db::get(react.message_id.into()).await?;
-            db::set(msg.msg_id, msg.post_id.clone(), msg.link, count).await?;
+            db::set(
+                msg.msg_id,
+                msg.channel_id,
+                msg.post_id.clone(),
+                msg.link,
+                count,
+            )
+            .await?;
         }
     }
 
@@ -332,7 +379,7 @@ async fn message_handler(ctx: &serenity::Context, msg: &Message) -> Result<(), E
 
 fn reply_content(content: &str) -> String {
     let mut out = String::from("");
-    if content.contains("moyai") || content.contains("🗿") {
+    if content.contains("moyai") || content.contains('🗿') {
         out += "🗿";
     };
     if content.contains("balls") {

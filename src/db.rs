@@ -25,7 +25,8 @@ pub async fn init() -> Result<(), sqlx::Error> {
     let _ = sqlx::query(
         "CREATE TABLE IF NOT EXISTS board (
             msg_id VARCHAR(32) NOT NULL UNIQUE,
-            post_id VARCHAR(32) NOT NULL,
+            channel_id VARCHAR(32) NOT NULL,
+            post_id VARCHAR(32) NOT NULL UNIQUE,
             link VARCHAR(88) NOT NULL,
             moyai_count INT(8) NOT NULL
         );",
@@ -39,6 +40,7 @@ pub async fn init() -> Result<(), sqlx::Error> {
 #[derive(FromRow, Debug, Default)]
 pub struct Message {
     pub msg_id: String,
+    pub channel_id: String,
     pub post_id: String,
     pub link: String,
     pub moyai_count: u8,
@@ -58,7 +60,7 @@ pub async fn exists(id: u64) -> Result<bool, sqlx::Error> {
     .await
     .unwrap_or(Message::default());
 
-    Ok(msg.msg_id != "")
+    Ok(!msg.msg_id.is_empty())
 }
 
 pub async fn get(id: u64) -> Result<Message, sqlx::Error> {
@@ -76,14 +78,15 @@ pub async fn get(id: u64) -> Result<Message, sqlx::Error> {
     Ok(msg)
 }
 
-pub async fn set(id: String, post_id: String, link: String, count: u8) -> Result<(), sqlx::Error> {
+pub async fn set(msg_id: String, channel_id: String, post_id: String, link: String, count: u8) -> Result<(), sqlx::Error> {
     let db = connect().await?;
 
     sqlx::query(
         "replace into board
-        values (?, ?, ?, ?)",
+        values (?, ?, ?, ?, ?)",
     )
-    .bind(id)
+    .bind(msg_id)
+    .bind(channel_id)
     .bind(post_id)
     .bind(link)
     .bind(count)
@@ -94,16 +97,18 @@ pub async fn set(id: String, post_id: String, link: String, count: u8) -> Result
 }
 
 #[derive(FromRow, Debug, Default)]
-pub struct BoardEntry {
+pub struct DBEntry {
     pub link: String,
-    pub count: u8,
+    pub msg_id: String,
+    pub channel_id: String,
+    pub moyai_count: u8,
 }
 
-pub async fn list() -> Result<Vec<BoardEntry>, sqlx::Error> {
+pub async fn list() -> Result<Vec<DBEntry>, sqlx::Error> {
     let db = connect().await?;
 
-    let entries = sqlx::query_as::<_, BoardEntry>(
-        "select link, moyai_count
+    let entries = sqlx::query_as::<_, DBEntry>(
+        "select link, moyai_count, msg_id, channel_id
         from board
         order by moyai_count desc
         limit 10",
@@ -111,7 +116,7 @@ pub async fn list() -> Result<Vec<BoardEntry>, sqlx::Error> {
     .fetch_all(&db)
     .await?;
 
-    Ok(dbg!(entries))
+    Ok(entries)
 }
 
 pub async fn clean() -> Result<Vec<u64>, sqlx::Error> {
