@@ -10,7 +10,9 @@ use poise::serenity_prelude::{
 
 use globals::*;
 
-struct Data {}
+struct Data {
+    pub bot_pfp: Option<String>
+}
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
@@ -140,6 +142,9 @@ async fn main() {
     db::init().await.unwrap();
 
     let token = {
+        #[cfg(debug_assertions)]
+        let mut f = File::open("./dtoken.txt").expect("dtoken.txt not found");
+        #[cfg(not(debug_assertions))]
         let mut f = File::open("./token.txt").expect("token.txt not found");
         let mut s = String::new();
         match f.read_to_string(&mut s) {
@@ -158,17 +163,17 @@ async fn main() {
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands,
-            event_handler: |ctx, event, _framework, _user_data| {
+            event_handler: |ctx, event, _framework, user_data| {
                 Box::pin(async move {
                     match event {
                         poise::Event::Message { new_message } => {
                             message_handler(ctx, new_message).await?;
                         }
                         poise::Event::ReactionAdd { add_reaction } => {
-                            reaction_handler(ctx, add_reaction).await?;
+                            reaction_handler(ctx, add_reaction, user_data).await?;
                         }
                         poise::Event::ReactionRemove { removed_reaction } => {
-                            reaction_handler(ctx, removed_reaction).await?;
+                            reaction_handler(ctx, removed_reaction, user_data).await?;
                             reaction_remove(ctx, removed_reaction).await?;
                         }
                         _ => (),
@@ -180,17 +185,20 @@ async fn main() {
         })
         .token(token)
         .intents(intents)
-        .setup(|ctx, _ready, frm| {
+        .setup(|ctx, ready, frm| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &frm.options().commands).await?;
-                Ok(Data {})
+                let bot_pfp = ready.user.avatar_url();
+                Ok(Data {
+                    bot_pfp
+                })
             })
         });
 
     framework.run().await.unwrap();
 }
 
-async fn reaction_handler(ctx: &serenity::Context, react: &Reaction) -> Result<(), Error> {
+async fn reaction_handler(ctx: &serenity::Context, react: &Reaction, user_data: &Data) -> Result<(), Error> {
     let is_moyai = match &react.emoji {
         #[allow(unused_variables)]
         serenity::ReactionType::Unicode(char) => char == "🗿",
@@ -234,10 +242,8 @@ async fn reaction_handler(ctx: &serenity::Context, react: &Reaction) -> Result<(
                             "".to_string()
                         }
                     };
-                    let color = message
-                        .author
-                        .accent_colour
-                        .unwrap_or(serenity::Colour(0xAA00BB));
+                    let color = 
+                        serenity::Colour(0xAA00BB);
                     let jump_url = message.link();
                     let msg = ch
                         .send_message(ctx.http(), |m| {
@@ -245,6 +251,12 @@ async fn reaction_handler(ctx: &serenity::Context, react: &Reaction) -> Result<(
                                 e.author(|a| a.name(author_nick).icon_url(author_pfp));
                                 e.description(message.content);
                                 e.field("Source", format!("[Jump]({})", jump_url), true);
+                                e.footer(|f| {
+                                    if let Some(pfp) = &user_data.bot_pfp {
+                                        f.icon_url(pfp);
+                                    };
+                                    f.text(message.timestamp)
+                                });
                                 e.image(image);
                                 e.color(color)
                             });
