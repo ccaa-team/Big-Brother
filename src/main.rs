@@ -84,6 +84,14 @@ struct Entry {
     pub count: u8,
 }
 
+// https://stackoverflow.com/questions/38461429/how-can-i-truncate-a-string-to-have-at-most-n-characters#comment64327244_38461429
+fn truncate(s: &str, max_chars: usize) -> &str {
+    match s.char_indices().nth(max_chars) {
+        None => s,
+        Some((idx, _)) => &s[..idx],
+    }
+}
+
 #[poise::command(slash_command)]
 async fn top10moyai(ctx: Context<'_>) -> Result<(), Error> {
     let list = db::list().await?;
@@ -95,9 +103,13 @@ async fn top10moyai(ctx: Context<'_>) -> Result<(), Error> {
             if let (Ok(chn_id), Ok(msg_id)) = (e.channel_id.parse(), e.msg_id.parse::<u64>()) {
                 let channel = ChannelId(chn_id);
                 if let Ok(msg) = channel.message(ctx.http(), msg_id).await {
-                    let author = msg.author.name.clone();
-                    let content = msg.content.clone();
-                    let jump = msg.link().clone();
+                    let author = msg.author.name.to_string();
+                    let content = if msg.content.len() > 127 {
+                        format!("{}...", truncate(&msg.content, 128))
+                    } else {
+                        msg.content.to_string()
+                    };
+                    let jump = msg.link().to_string();
                     let place = i;
                     let count = e.moyai_count;
                     let val = Entry {
