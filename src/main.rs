@@ -274,8 +274,7 @@ async fn reaction_handler(
                 }
             }
             result
-        };
-        let count: u8 = count.try_into().unwrap();
+        }.try_into().unwrap();
         if count >= THRESHOLD {
             if !db::exists(react.message_id.into()).await? {
                 let channel = ctx.http.get_channel(CURSED_BOARD).await?;
@@ -324,7 +323,6 @@ async fn reaction_handler(
                     .await?;
                 }
             }
-        } else {
             let msg = db::get(react.message_id.into()).await?;
             db::set(
                 msg.msg_id,

@@ -89,7 +89,7 @@ pub async fn set(msg_id: String, channel_id: String, post_id: String, link: Stri
     .bind(channel_id)
     .bind(post_id)
     .bind(link)
-    .bind(count)
+    .bind(dbg!(count))
     .execute(&db)
     .await?;
 
