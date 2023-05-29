@@ -1,5 +1,5 @@
-use crate::globals::THRESHOLD;
 use crate::globals::DB_URL;
+use crate::globals::THRESHOLD;
 
 use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
 
@@ -78,7 +78,13 @@ pub async fn get(id: u64) -> Result<Message, sqlx::Error> {
     Ok(msg)
 }
 
-pub async fn set(msg_id: String, channel_id: String, post_id: String, link: String, count: u8) -> Result<(), sqlx::Error> {
+pub async fn set(
+    msg_id: String,
+    channel_id: String,
+    post_id: String,
+    link: String,
+    count: u8,
+) -> Result<(), sqlx::Error> {
     let db = connect().await?;
 
     sqlx::query(
@@ -89,7 +95,7 @@ pub async fn set(msg_id: String, channel_id: String, post_id: String, link: Stri
     .bind(channel_id)
     .bind(post_id)
     .bind(link)
-    .bind(dbg!(count))
+    .bind(count)
     .execute(&db)
     .await?;
 
@@ -130,14 +136,14 @@ pub async fn clean() -> Result<Vec<u64>, sqlx::Error> {
     .fetch_all(&db)
     .await?;
 
+    let out: Vec<u64> = dbg!(result)
+        .iter()
+        .map(|x| dbg!(x).post_id.parse::<u64>().unwrap_or(0))
+        .collect();
+
     sqlx::query("delete from board where moyai_count = 0")
         .execute(&db)
         .await?;
-
-    let out: Vec<u64> = result
-        .iter()
-        .map(|x| x.post_id.parse::<u64>().expect("guh"))
-        .collect();
 
     Ok(out)
 }

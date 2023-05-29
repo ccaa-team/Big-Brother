@@ -5,7 +5,8 @@ mod uwu;
 use std::{fs::File, io::Read, path::Path};
 
 use poise::serenity_prelude::{
-    self as serenity, AttachmentType, CacheHttp, Channel, ChannelId, GatewayIntents, Message, Reaction,
+    self as serenity, AttachmentType, CacheHttp, Channel, ChannelId, GatewayIntents, Message,
+    Reaction,
 };
 
 use globals::*;
@@ -274,7 +275,18 @@ async fn reaction_handler(
                 }
             }
             result
-        }.try_into().unwrap();
+        }
+        .try_into()
+        .unwrap();
+        let msg = db::get(react.message_id.into()).await?;
+        db::set(
+            msg.msg_id,
+            msg.channel_id,
+            msg.post_id.clone(),
+            msg.link,
+            count,
+        )
+        .await?;
         if count >= THRESHOLD {
             if !db::exists(react.message_id.into()).await? {
                 let channel = ctx.http.get_channel(CURSED_BOARD).await?;
@@ -323,15 +335,6 @@ async fn reaction_handler(
                     .await?;
                 }
             }
-            let msg = db::get(react.message_id.into()).await?;
-            db::set(
-                msg.msg_id,
-                msg.channel_id,
-                msg.post_id.clone(),
-                msg.link,
-                count,
-            )
-            .await?;
         }
     }
 
@@ -350,8 +353,10 @@ async fn reaction_remove(ctx: &serenity::Context, react: &Reaction) -> Result<()
     if is_moyai {
         let list = db::clean().await?;
         for msg in list.iter() {
-            let message = ctx.http.get_message(CURSED_BOARD, *msg).await?;
-            message.delete(ctx.http()).await?;
+            if *msg != 0 {
+                let message = ctx.http.get_message(CURSED_BOARD, *msg).await?;
+                message.delete(ctx.http()).await?;
+            }
         }
     }
 
