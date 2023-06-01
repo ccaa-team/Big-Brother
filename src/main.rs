@@ -5,8 +5,8 @@ mod uwu;
 use std::{fs::File, io::Read, path::Path};
 
 use poise::serenity_prelude::{
-    self as serenity, AttachmentType, CacheHttp, Channel, ChannelId, GatewayIntents, Message,
-    Reaction,
+    self as serenity, AttachmentType, CacheHttp, Channel, ChannelId, GatewayIntents,
+    Message, Reaction,
 };
 
 use globals::*;
@@ -57,11 +57,19 @@ async fn uwu(
         }
     };
 
+    let content = uwuify(text);
     webhook
         .execute(&ctx.http(), false, |m| {
-            m.content(uwuify(text))
-                .avatar_url(avatar_url)
-                .username(name)
+            m.avatar_url(avatar_url).username(name);
+
+            if content.len() <= 2000 {
+                m.content(content)
+            } else {
+                m.add_file(AttachmentType::Bytes {
+                    data: std::borrow::Cow::Owned(content.into()),
+                    filename: "uwu.txt".to_string(),
+                })
+            }
         })
         .await?;
 
