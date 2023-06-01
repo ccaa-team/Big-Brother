@@ -1,42 +1,21 @@
 use rand::prelude::*;
 
-static EMOJIS: [&str; 32] = [
-    " rawr x3",
+const EMOJIS_SIZE: usize = 9;
+
+static EMOJIS: [&str; EMOJIS_SIZE] = [
     " OwO",
     " UwU",
-    " o.O",
-    " -.-",
     " >w<",
-    " (⑅˘꒳˘)",
-    " (ꈍᴗꈍ)",
-    " (˘ω˘)",
-    " (U ᵕ U❁)",
-    " σωσ",
-    " òωó",
-    " (///ˬ///✿)",
-    " (U ﹏ U)",
-    " ( ͡o ω ͡o )",
-    " ʘwʘ",
     " :3",
-    " :3",
-    " XD",
+    " o///o",
     " nyaa\\~\\~",
     "~",
     " >_<",
-    " 😳",
     " 🥺",
-    " 😳😳😳",
-    " rawr",
-    " ^^",
-    " ^^;;",
-    " (ˆ ﻌ ˆ)♡",
-    " ^•ﻌ•^",
-    " /(^•ω•^)",
-    " (✿oωo)",
 ];
 
 fn random_emoji() -> String {
-    let idx = rand::thread_rng().gen_range(1..32);
+    let idx = rand::thread_rng().gen_range(1..EMOJIS.len());
     EMOJIS[idx].to_string()
 }
 
@@ -64,7 +43,7 @@ fn uwu_word(word: &str) -> Option<String> {
     }
 
     let end = {
-        if last_char.is_ascii_punctuation() || rand::thread_rng().gen_ratio(1, 6) {
+        if last_char.is_ascii_punctuation() || rand::thread_rng().gen_ratio(1, 4) {
             random_emoji()
         } else {
             "".to_string()
@@ -73,7 +52,7 @@ fn uwu_word(word: &str) -> Option<String> {
 
     let first_char = out.chars().next().unwrap();
 
-    if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_ratio(1, 4) {
+    if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_ratio(1, 2) {
         let mut tmp = String::from("");
         tmp.push(first_char);
         tmp.push('-');
@@ -83,20 +62,13 @@ fn uwu_word(word: &str) -> Option<String> {
         out = tmp;
     }
 
-    Some(out + &end + " ")
+    Some(out + &end)
 }
 
 pub fn uwuify(text: String) -> String {
     let low = text.to_lowercase();
 
-    let split = low.split(' ');
-    let mut out = String::from("");
-
-    for word in split.into_iter() {
-        let uwud = uwu_word(word).unwrap();
-
-        out += &uwud;
-    }
-
-    out
+    low.split(' ')
+        .map(uwu_word)
+        .fold(String::new(), |a, b| a + " " + &b.unwrap_or("".to_string()))
 }

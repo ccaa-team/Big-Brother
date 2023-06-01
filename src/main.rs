@@ -52,7 +52,7 @@ async fn uwu(
         Some(webhook) => webhook,
         None => {
             channel_id
-                .create_webhook(&ctx.http(), "Uwu webhook")
+                .create_webhook(&ctx.http(), "uwu webhook")
                 .await?
         }
     };
@@ -155,15 +155,12 @@ async fn top10moyai(ctx: Context<'_>) -> Result<(), Error> {
     required_permissions = "MANAGE_ROLES"
 )]
 async fn embrace(ctx: Context<'_>, mem: serenity::User) -> Result<(), Error> {
-    let gid = if let Some(gid) = ctx.guild_id() {
-        gid
-    } else {
-        unreachable!();
-    };
+    let gid = ctx.guild_id().ok_or("ok discord")?;
 
     if gid == serenity::GuildId(1023332212403351563) {
         let mut member = gid.member(&ctx.http(), mem.id).await?;
         member.add_role(&ctx.http(), 1023334181952049203).await?;
+        ctx.send(|m| m.content("Done!").ephemeral(true)).await?;
     } else {
         ctx.send(|m| {
             m.content("Sorry, but this command only works in a specific guild.")
@@ -171,8 +168,6 @@ async fn embrace(ctx: Context<'_>, mem: serenity::User) -> Result<(), Error> {
         })
         .await?;
     }
-
-    ctx.send(|m| m.content("Done!").ephemeral(true)).await?;
 
     Ok(())
 }
@@ -188,20 +183,19 @@ async fn e621(
     Ok(())
 }
 
+#[cfg(debug_assertions)]
+static TOKEN_FILE: &str = "dtoken.txt";
+#[cfg(not(debug_assertions))]
+static TOKEN_FILE: &str = "token.txt";
+
 #[tokio::main]
 async fn main() {
     db::init().await.unwrap();
 
     let token = {
-        #[cfg(debug_assertions)]
-        let mut f = File::open("./dtoken.txt").expect("dtoken.txt not found");
-        #[cfg(not(debug_assertions))]
-        let mut f = File::open("./token.txt").expect("token.txt not found");
+        let mut f = File::open(TOKEN_FILE).expect(&format!("{TOKEN_FILE} not found."));
         let mut s = String::new();
-        match f.read_to_string(&mut s) {
-            Ok(_) => (),
-            Err(_) => panic!("Failed to read token."),
-        };
+        f.read_to_string(&mut s).expect("Failed to read token.");
         s
     };
 
@@ -252,89 +246,87 @@ async fn reaction_handler(
     react: &Reaction,
     user_data: &Data,
 ) -> Result<(), Error> {
-    let is_moyai = match &react.emoji {
-        #[allow(unused_variables)]
-        serenity::ReactionType::Unicode(char) => char == "🗿",
-        _ => false,
+    match &react.emoji {
+        serenity::ReactionType::Unicode(char) => {
+            if char != "🗿" {
+                return Ok(());
+            }
+        }
+        _ => return Ok(()),
     };
+
     if react.channel_id == CURSED_BOARD {
         return Ok(());
     }
 
-    if is_moyai {
-        let msg = ctx
-            .http()
-            .get_message(react.channel_id.into(), react.message_id.into())
-            .await?;
-        let count = {
-            let mut result = 0;
-            for reaction in msg.reactions.iter() {
-                if reaction.reaction_type.unicode_eq("🗿") {
-                    result = reaction.count;
-                    break;
-                }
-            }
-            result
-        }
-        .try_into()
-        .unwrap();
-        let msg = db::get(react.message_id.into()).await?;
-        db::set(
-            msg.msg_id,
-            msg.channel_id,
-            msg.post_id.clone(),
-            msg.link,
-            count,
-        )
+    let msg = ctx
+        .http()
+        .get_message(react.channel_id.into(), react.message_id.into())
         .await?;
-        if count >= THRESHOLD {
-            if !db::exists(react.message_id.into()).await? {
-                let channel = ctx.http.get_channel(CURSED_BOARD).await?;
-                if let Channel::Guild(ch) = channel {
-                    let message = react.message(ctx.http()).await?;
-                    let author_pfp = message.author.avatar_url().unwrap_or("https://cdn.discordapp.com/attachments/1078686956705284158/1102276838513971311/nix.png".to_string());
-                    let author_nick = message
-                        .author_nick(ctx.http())
-                        .await
-                        .unwrap_or(message.author.name.clone());
-                    let image = {
-                        let img = message.attachments.first();
-                        if img.is_some() {
-                            img.unwrap().url.to_owned()
-                        } else {
-                            "".to_string()
-                        }
-                    };
-                    let color = serenity::Colour(0xAA00BB);
-                    let jump_url = message.link();
-                    let msg = ch
-                        .send_message(ctx.http(), |m| {
-                            m.embed(|e| {
-                                e.author(|a| a.name(author_nick).icon_url(author_pfp));
-                                e.description(message.content);
-                                e.field("Source", format!("[Jump]({})", jump_url), true);
-                                e.footer(|f| {
-                                    if let Some(pfp) = &user_data.bot_pfp {
-                                        f.icon_url(pfp);
-                                    };
-                                    f.text(message.timestamp)
-                                });
-                                e.image(image);
-                                e.color(color)
-                            });
-                            m.content(format!("<#{}>", message.channel_id.as_u64()))
-                        })
-                        .await?;
-                    db::set(
-                        react.message_id.to_string(),
-                        react.channel_id.to_string(),
-                        msg.id.to_string(),
-                        msg.link(),
-                        count,
-                    )
-                    .await?;
-                }
+
+    let mut iter = msg.reactions.iter();
+    let count = loop {
+        if let Some(reaction) = iter.next() {
+            if reaction.reaction_type.unicode_eq("🗿") {
+                break reaction.count;
             }
+        }
+    }
+    .try_into()
+    .unwrap();
+
+    let msg = db::get(react.message_id.into()).await?;
+    db::set(
+        msg.msg_id,
+        msg.channel_id,
+        msg.post_id.clone(),
+        msg.link,
+        count,
+    )
+    .await?;
+    if count >= THRESHOLD && !db::exists(react.message_id.into()).await? {
+        let channel = ctx.http.get_channel(CURSED_BOARD).await?;
+        if let Channel::Guild(ch) = channel {
+            let message = react.message(ctx.http()).await?;
+            let author_pfp = message
+                .author
+                .avatar_url()
+                .unwrap_or(BACKUP_PFP.to_string());
+            let author_nick = message
+                .author_nick(ctx.http())
+                .await
+                .unwrap_or(message.author.name.clone());
+            let img = message.attachments.first();
+            let color = serenity::Colour(0xAA00BB);
+            let jump_url = message.link();
+            let msg = ch
+                .send_message(ctx.http(), |m| {
+                    m.embed(|e| {
+                        e.author(|a| a.name(author_nick).icon_url(author_pfp))
+                            .description(message.content)
+                            .field("Source", format!("[Jump]({})", jump_url), true)
+                            .footer(|f| {
+                                if let Some(pfp) = &user_data.bot_pfp {
+                                    f.icon_url(pfp);
+                                };
+                                f.text(message.timestamp)
+                            });
+                        if let Some(attachment) = img {
+                            e.image(&attachment.url);
+                        }
+                        e.color(color)
+                    });
+                    m.content(format!("<#{}>", message.channel_id.as_u64()))
+                })
+                .await?;
+            db::set(
+                react.message_id.to_string(),
+                react.channel_id.to_string(),
+                msg.id.to_string(),
+                msg.link(),
+                count,
+            )
+            .await?;
         }
     }
 
@@ -342,21 +334,20 @@ async fn reaction_handler(
 }
 
 async fn reaction_remove(ctx: &serenity::Context, react: &Reaction) -> Result<(), Error> {
-    let is_moyai = match &react.emoji {
-        #[allow(unused_variables)]
-        serenity::ReactionType::Unicode(char) => char == "🗿",
-        #[allow(unused_variables)]
-        serenity::ReactionType::Custom { animated, id, name } => false,
-        _ => false,
+    match &react.emoji {
+        serenity::ReactionType::Unicode(char) => {
+            if char != "🗿" {
+                return Ok(());
+            }
+        }
+        _ => return Ok(()),
     };
 
-    if is_moyai {
-        let list = db::clean().await?;
-        for msg in list.iter() {
-            if *msg != 0 {
-                let message = ctx.http.get_message(CURSED_BOARD, *msg).await?;
-                message.delete(ctx.http()).await?;
-            }
+    let list = db::clean().await?;
+    for msg in list.iter() {
+        if *msg != 0 {
+            let message = ctx.http.get_message(CURSED_BOARD, *msg).await?;
+            message.delete(ctx.http()).await?;
         }
     }
 
@@ -399,15 +390,6 @@ fn reply_content(content: &str) -> String {
     };
     if content.contains("balls") {
         out += "<:whatwedotoyourballs:1023352899075571752> ";
-    };
-    if content.contains("connor") {
-        out += ":skull: ";
-    };
-    if content.contains("stupid") {
-        let stupid = rand::thread_rng().gen_ratio(1, 10);
-        if stupid {
-            out += "https://www.youtube.com/watch?v=nnkyInAj6Z8 ";
-        }
     };
     out
 }

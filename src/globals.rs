@@ -10,3 +10,5 @@ pub const THRESHOLD: u8 = 3;
 pub const DB_URL: &str = "sqlite://moyai_dbg.db";
 #[cfg(not(debug_assertions))]
 pub const DB_URL: &str = "sqlite://moyai.db";
+
+pub const BACKUP_PFP: &str = "https://cdn.discordapp.com/attachments/1078686956705284158/1102276838513971311/nix.png";
