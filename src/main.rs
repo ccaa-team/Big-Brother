@@ -254,13 +254,8 @@ async fn reaction_handler(
     react: &Reaction,
     user_data: &Data,
 ) -> Result<(), Error> {
-    match &react.emoji {
-        serenity::ReactionType::Unicode(char) => {
-            if char != "🗿" {
-                return Ok(());
-            }
-        }
-        _ => return Ok(()),
+    if !react.emoji.unicode_eq("🗿") {
+        return Ok(());
     };
 
     if react.channel_id == CURSED_BOARD {
@@ -342,13 +337,8 @@ async fn reaction_handler(
 }
 
 async fn reaction_remove(ctx: &serenity::Context, react: &Reaction) -> Result<(), Error> {
-    match &react.emoji {
-        serenity::ReactionType::Unicode(char) => {
-            if char != "🗿" {
-                return Ok(());
-            }
-        }
-        _ => return Ok(()),
+    if !react.emoji.unicode_eq("🗿") {
+        return Ok(());
     };
 
     let list = db::clean().await?;

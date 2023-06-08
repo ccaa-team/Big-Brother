@@ -1,6 +1,6 @@
 use rand::prelude::*;
 
-const EMOJIS_SIZE: usize = 9;
+const EMOJIS_SIZE: usize = 8;
 
 static EMOJIS: [&str; EMOJIS_SIZE] = [
     " OwO",
@@ -11,7 +11,6 @@ static EMOJIS: [&str; EMOJIS_SIZE] = [
     " nyaa\\~\\~",
     "~",
     " >_<",
-    " 🥺",
 ];
 
 fn random_emoji() -> String {
