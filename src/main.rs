@@ -372,7 +372,7 @@ async fn message_handler(ctx: &serenity::Context, msg: &Message) -> Result<(), E
 
     msg.channel_id
         .send_message(&ctx.http(), |m| {
-            m.files(files).content(reply_content);
+            m.files(files).content(uwu(reply_content));
             if piss {
                 m.reference_message(msg);
             };
