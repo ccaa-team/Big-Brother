@@ -369,10 +369,11 @@ async fn message_handler(ctx: &serenity::Context, msg: &Message) -> Result<(), E
     if files.is_empty() && reply_content.is_empty() {
         return Ok(());
     }
+    reply_content = uwuify(reply_content);
 
     msg.channel_id
         .send_message(&ctx.http(), |m| {
-            m.files(files).content(uwu(reply_content));
+            m.files(files).content(reply_content);
             if piss {
                 m.reference_message(msg);
             };
