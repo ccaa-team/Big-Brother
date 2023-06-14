@@ -103,6 +103,7 @@ fn truncate(s: &str, max_chars: usize) -> &str {
 
 #[poise::command(slash_command)]
 async fn top10moyai(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.defer_ephemeral().await?;
     let list = db::list().await?;
 
     let list = async {
