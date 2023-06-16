@@ -212,7 +212,7 @@ async fn main() {
         | GatewayIntents::MESSAGE_CONTENT
         | GatewayIntents::GUILD_MESSAGE_REACTIONS;
 
-    let commands = vec![capy64(), mrbeast(), uwu(), embrace(), e621(), top5moyai()];
+    let commands = vec![capy64(), mrbeast(), uwu(), embrace(), e621(), top10moyai()];
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
