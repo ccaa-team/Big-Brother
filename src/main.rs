@@ -60,7 +60,7 @@ async fn uwu(
     let content = uwuify(text);
     webhook
         .execute(&ctx.http(), false, |m| {
-            m.avatar_url(avatar_url).username(name);
+            m.avatar_url(avatar_url).username(uwuify(name));
 
             if content.len() <= 2000 {
                 m.content(content)
@@ -102,7 +102,7 @@ fn truncate(s: &str, max_chars: usize) -> &str {
 }
 
 #[poise::command(slash_command)]
-async fn top5moyai(ctx: Context<'_>) -> Result<(), Error> {
+async fn top10moyai(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
     let list = db::list().await?;
 

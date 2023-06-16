@@ -117,7 +117,7 @@ pub async fn list() -> Result<Vec<DBEntry>, sqlx::Error> {
         "select link, moyai_count, msg_id, channel_id
         from board
         order by moyai_count desc
-        limit 5",
+        limit 10",
     )
     .fetch_all(&db)
     .await?;

@@ -1,6 +1,6 @@
 use rand::prelude::*;
 
-const EMOJIS_SIZE: usize = 8;
+const EMOJIS_SIZE: usize = 11;
 
 static EMOJIS: [&str; EMOJIS_SIZE] = [
     " OwO",
@@ -11,6 +11,9 @@ static EMOJIS: [&str; EMOJIS_SIZE] = [
     " nyaa\\~\\~",
     "~",
     " >_<",
+    " uguu..,",
+    " -.-",
+    " 〜☆"
 ];
 
 fn random_emoji() -> String {
@@ -42,7 +45,7 @@ fn uwu_word(word: &str) -> Option<String> {
     }
 
     let end = {
-        if last_char.is_ascii_punctuation() || rand::thread_rng().gen_ratio(1, 4) {
+        if rand::thread_rng().gen_ratio(1, 6) {
             random_emoji()
         } else {
             "".to_string()
@@ -51,7 +54,7 @@ fn uwu_word(word: &str) -> Option<String> {
 
     let first_char = out.chars().next().unwrap();
 
-    if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_ratio(1, 2) {
+    if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_ratio(1, 3) {
         let mut tmp = String::from("");
         tmp.push(first_char);
         tmp.push('-');
