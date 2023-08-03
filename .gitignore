@@ -8,6 +8,7 @@ build/
 # Secrets
 moyai*
 *.txt
+.direnv
 
 # Added by cargo
 

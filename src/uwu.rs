@@ -1,6 +1,6 @@
 use rand::prelude::*;
 
-const EMOJIS_SIZE: usize = 11;
+const EMOJIS_SIZE: usize = 15;
 
 static EMOJIS: [&str; EMOJIS_SIZE] = [
     " OwO",
@@ -8,12 +8,16 @@ static EMOJIS: [&str; EMOJIS_SIZE] = [
     " >w<",
     " :3",
     " o///o",
+    " >///<",
     " nyaa\\~\\~",
-    "~",
-    " >_<",
+    " >\\_<",
     " uguu..,",
     " -.-",
-    " 〜☆"
+    " ^w^",
+    " ^-^",
+    " omo",
+    "〜☆",
+    "~",
 ];
 
 fn random_emoji() -> String {
@@ -30,9 +34,7 @@ fn uwu_word(word: &str) -> Option<String> {
         return Some(word.to_string());
     };
 
-    let last_char = word.chars().last().unwrap();
-
-    let mut out = word.replace(['l', 'r'], "w");
+    let mut out = word.replace(['l', 'r'], "w").replace("th", "f").replace('d', "t");
 
     for vowel in VOWELS.iter() {
         let mut from = String::from("n");
@@ -45,7 +47,7 @@ fn uwu_word(word: &str) -> Option<String> {
     }
 
     let end = {
-        if rand::thread_rng().gen_ratio(1, 6) {
+        if rand::thread_rng().gen_ratio(1, 8) {
             random_emoji()
         } else {
             "".to_string()
@@ -55,9 +57,12 @@ fn uwu_word(word: &str) -> Option<String> {
     let first_char = out.chars().next().unwrap();
 
     if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_ratio(1, 3) {
+        let stutters = (rand::thread_rng().gen_range(1..=5) - 3).clamp(1, 2);
         let mut tmp = String::from("");
-        tmp.push(first_char);
-        tmp.push('-');
+        for _ in 1..=stutters {
+            tmp.push(first_char);
+            tmp.push('-');
+        }
         for chr in out.chars() {
             tmp.push(chr);
         }
