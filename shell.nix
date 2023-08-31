@@ -9,7 +9,6 @@ stdenv.mkDerivation {
   name = "autovirt_env";
   buildInputs = [
     pkg-config
-    # to use the latest nightly:
     nixpkgs.latest.rustChannels.stable.rust
     openssl
   ];

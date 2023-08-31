@@ -21,7 +21,7 @@ pub async fn top10moyai(ctx: Context<'_>) -> Result<(), Error> {
     let list = async {
         let mut out = vec![];
         let mut i = 1;
-        for e in list.iter() {
+        list.iter().foreach(|e| {
             if let (Ok(chn_id), Ok(msg_id)) = (e.channel_id.parse(), e.msg_id.parse::<u64>()) {
                 let channel = ChannelId(chn_id);
                 if let Ok(msg) = channel.message(ctx.http(), msg_id).await {
@@ -44,7 +44,7 @@ pub async fn top10moyai(ctx: Context<'_>) -> Result<(), Error> {
                     out.push(val);
                 }
                 i += 1;
-            };
+            });
         }
         out
     }

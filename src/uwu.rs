@@ -37,11 +37,8 @@ fn uwu_word(word: &str) -> Option<String> {
     let mut out = word.replace(['l', 'r'], "w").replace("th", "f").replace('d', "t");
 
     for vowel in VOWELS.iter() {
-        let mut from = String::from("n");
-        let mut to = String::from("ny");
-
-        from.push(*vowel);
-        to.push(*vowel);
+        let mut from = String::from("n") + *vowel;
+        let mut to = String::from("ny") + *vowel;
 
         out = out.replace(&from, &to);
     }
