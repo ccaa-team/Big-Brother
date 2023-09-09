@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "delete from replies\n        where trigger = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "5843f0dc65bb4776ce6254b8d0d490895322bb199ad51c9e993104ef7630f3d9"
+}

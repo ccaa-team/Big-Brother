@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-poise = "0.5.2"
+poise = "0.5.5"
 rand = "0.8.5"
-sqlx = { version = "0.6.3", features = ["sqlite", "runtime-tokio-rustls"] }
-tokio = { version = "1.25.0", features = ["rt-multi-thread"] }
+sqlx = { version = "0.7.1", features = ["runtime-tokio", "sqlite"] }
+tokio = { version = "1.32.0", features = ["full"] }

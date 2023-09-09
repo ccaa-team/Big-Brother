@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "update moyai\n         set moyai_count = ?\n         where message_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "942ab75db484036adc63d21336b4a508a7bb1127a281b5e47690caf17f3ff88c"
+}

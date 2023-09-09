@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "select * from replies",
+  "describe": {
+    "columns": [
+      {
+        "name": "trigger",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "reply",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "dec4aabd9d794e140f1e1a3e3c97b4e46406f66650e1ac3643d848dcd4b12b5c"
+}

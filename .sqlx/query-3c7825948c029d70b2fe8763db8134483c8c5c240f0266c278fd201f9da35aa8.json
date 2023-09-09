@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "insert into moyai\n        values(?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "3c7825948c029d70b2fe8763db8134483c8c5c240f0266c278fd201f9da35aa8"
+}

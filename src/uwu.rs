@@ -25,22 +25,27 @@ fn random_emoji() -> String {
     EMOJIS[idx].to_string()
 }
 
-static VOWELS: [char; 5] = ['a', 'e', 'i', 'u', 'o'];
+static VOWELS: [char; 5] = ['a', 'e', 'i', 'o', 'u'];
 
-fn uwu_word(word: &str) -> Option<String> {
-    if word.is_empty() {
-        return None;
-    } else if word.starts_with("http") {
-        return Some(word.to_string());
+fn uwu_word(word: &str) -> String {
+    if word.starts_with("http") || word.is_empty() {
+        return word.to_string();
     };
 
-    let mut out = word.replace(['l', 'r'], "w").replace("th", "f").replace('d', "t");
+    let mut out = word
+        .replace(['l', 'r'], "w")
+        .replace("th", "f")
+        .replace('d', "t");
 
+    let mut n = String::from("n.");
+    let mut ny = String::from("ny.");
     for vowel in VOWELS.iter() {
-        let mut from = String::from("n") + *vowel;
-        let mut to = String::from("ny") + *vowel;
+        n.pop();
+        n.push(*vowel);
+        ny.pop();
+        ny.push(*vowel);
 
-        out = out.replace(&from, &to);
+        out = out.replace(&n, &ny);
     }
 
     let end = {
@@ -51,7 +56,7 @@ fn uwu_word(word: &str) -> Option<String> {
         }
     };
 
-    let first_char = out.chars().next().unwrap();
+    let first_char = out.chars().next().expect("guh??");
 
     if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_ratio(1, 3) {
         let stutters = (rand::thread_rng().gen_range(1..=5) - 3).clamp(1, 2);
@@ -66,13 +71,11 @@ fn uwu_word(word: &str) -> Option<String> {
         out = tmp;
     }
 
-    Some(out + &end)
+    out + &end
 }
 
 pub fn uwuify(text: String) -> String {
     let low = text.to_lowercase();
 
-    low.split(' ')
-        .map(uwu_word)
-        .fold(String::new(), |a, b| a + " " + &b.unwrap_or("".to_string()))
+    low.split(' ').map(uwu_word).collect::<Vec<_>>().join(" ")
 }
