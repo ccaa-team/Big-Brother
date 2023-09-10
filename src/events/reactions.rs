@@ -1,4 +1,4 @@
-use poise::serenity_prelude::{Context, Message, MessageReaction, Reaction};
+use poise::serenity_prelude::{Context, Message, MessageId, MessageReaction, Reaction};
 use sqlx::{query, query_as};
 
 use crate::{
@@ -7,7 +7,30 @@ use crate::{
     Data, Error,
 };
 
-async fn update_entry(
+async fn create_post(
+    ctx: &Context,
+    data: &Data,
+    count: &i64,
+    msg: &Message,
+) -> Result<MessageId, Error> {
+    let msg = data
+        .cursed_channel
+        .send_message(ctx, |m| {
+            m.content(&format!("{} {}", *count, MOYAI)).embed(|e| {
+                e.author(|a| a.name(&msg.author.name).icon_url(msg.author.face()));
+                if let Some(attachment) = msg.attachments.first() {
+                    e.image(&attachment.url);
+                };
+                e.description(&msg.content)
+                    .field("Source", format!("[jump]({})", msg.link()), false)
+                    .color(0xAC00BB)
+            })
+        })
+        .await?;
+    Ok(msg.id)
+}
+
+pub async fn update_entry(
     ctx: &Context,
     data: &Data,
     post: &BoardEntry,
@@ -25,18 +48,8 @@ async fn update_entry(
     .await?;
 
     if *count as u64 >= globals::THRESHOLD && post.post_id.is_none() {
-        let msg = data
-            .cursed_channel
-            .send_message(ctx, |m| {
-                m.embed(|e| {
-                    e.author(|a| a.name(&msg.author.name).icon_url(msg.author.face()));
-                    e.description(&msg.content)
-                        .field("Source", format!("[jump]({})", msg.link()), false)
-                        .color(0xAC00BB)
-                })
-            })
-            .await?;
-        let id = msg.id.to_string();
+        let id = create_post(ctx, data, count, msg).await?;
+        let id = id.to_string();
         sqlx::query!(
             "update moyai
              set post_id = ?
@@ -61,7 +74,7 @@ async fn update_entry(
     Ok(())
 }
 
-async fn create_entry(
+pub async fn create_entry(
     ctx: &Context,
     data: &Data,
     msg: &Message,
@@ -69,21 +82,19 @@ async fn create_entry(
 ) -> Result<(), Error> {
     let id = msg.id.to_string();
     let (post, author) = if reactions.count >= globals::THRESHOLD {
-        let post = data
-            .cursed_channel
-            .send_message(ctx, |m| {
-                m.embed(|e| {
-                    e.author(|a| a.name(&msg.author.name).icon_url(msg.author.face()));
-                    e.description(&msg.content)
-                        .field("Source", format!("[jump]({})", msg.link()), false)
-                        .color(0xAC00BB)
-                })
-            })
-            .await?;
-        (
-            Some(post.id.as_u64().to_string()),
-            msg.author.name.to_owned(),
+        let id = create_post(ctx, data, &(reactions.count as i64), msg).await?;
+        let id = id.to_string();
+        let count = reactions.count as i64;
+        sqlx::query!(
+            "update moyai
+            set moyai_count = ?
+            where message_id = ?",
+            count,
+            id
         )
+        .execute(&data.db)
+        .await?;
+        (Some(id), msg.author.name.to_owned())
     } else {
         (None, msg.author.name.to_owned())
     };
@@ -105,7 +116,7 @@ async fn create_entry(
 }
 
 pub async fn reaction_add(ctx: &Context, data: &Data, reaction: &Reaction) -> Result<(), Error> {
-    if !reaction.emoji.unicode_eq(MOYAI) {
+    if !reaction.emoji.unicode_eq(MOYAI) || reaction.channel_id == CURSED_BOARD {
         return Ok(());
     }
     let msg = reaction.message(ctx).await?;

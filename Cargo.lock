@@ -105,6 +105,7 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 name = "autovirt"
 version = "0.1.0"
 dependencies = [
+ "mexprp",
  "poise",
  "rand",
  "sqlx",
@@ -944,6 +945,15 @@ name = "memchr"
 version = "2.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5486aed0026218e61b8a01d5fbd5a0a134649abb71a0e53b7bc088529dced86e"
+
+[[package]]
+name = "mexprp"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50bb16f008075c96f108b693a7fc6b33bc3ad5d6db0b5dff46d887f9c26b1068"
+dependencies = [
+ "thiserror",
+]
 
 [[package]]
 name = "mime"

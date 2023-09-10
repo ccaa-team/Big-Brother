@@ -3,7 +3,11 @@ use std::vec;
 use poise::command;
 use sqlx::query_as;
 
-use crate::{globals::MOYAI, structs::BoardEntry, Context, Error};
+use crate::{
+    globals::{MOYAI, THRESHOLD},
+    structs::BoardEntry,
+    Context, Error,
+};
 
 #[command(slash_command, subcommands("list", "top"))]
 pub async fn moyai(_ctx: Context<'_>) -> Result<(), Error> {
@@ -18,11 +22,15 @@ fn truncate(s: &str, max_chars: usize) -> &str {
     }
 }
 
-#[command(slash_command)]
+#[command(slash_command, prefix_command)]
 async fn list(ctx: Context<'_>) -> Result<(), Error> {
     let list = query_as!(BoardEntry, "select * from moyai")
         .fetch_all(&ctx.data().db)
         .await?;
+    let list: Vec<_> = list
+        .iter()
+        .filter(|p| p.moyai_count >= THRESHOLD as i64)
+        .collect();
     ctx.send(|m| {
         for c in list.chunks(25) {
             m.embed(|e| {
@@ -30,7 +38,7 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
                     (
                         format!("{}: {} {}", p.author, p.moyai_count, MOYAI),
                         truncate(&p.message_content, 128),
-                        true,
+                        false,
                     )
                 }))
             });
@@ -42,7 +50,7 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-#[command(slash_command)]
+#[command(slash_command, prefix_command)]
 async fn top(ctx: Context<'_>, amount: Option<u8>) -> Result<(), Error> {
     let amount = amount.unwrap_or(10);
 
@@ -61,7 +69,7 @@ async fn top(ctx: Context<'_>, amount: Option<u8>) -> Result<(), Error> {
         (
             format!("{}: {} {}", e.author, e.moyai_count, MOYAI),
             &e.message_content,
-            true,
+            false,
         )
     });
     ctx.send(|m| m.embed(|e| e.fields(fields))).await?;

@@ -69,7 +69,7 @@ async fn main() {
     };
 
     use commands::*;
-    let commands = vec![uwu(), moyai(), autoreply()];
+    let commands = vec![uwu(), moyai(), autoreply(), scan(), calc()];
 
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT
@@ -110,6 +110,9 @@ async fn main() {
             },
             prefix_options: poise::PrefixFrameworkOptions {
                 prefix: Some(";".into()),
+                edit_tracker: Some(poise::EditTracker::for_timespan(
+                    std::time::Duration::from_secs(120),
+                )),
                 case_insensitive_commands: true,
                 ..Default::default()
             },

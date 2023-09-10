@@ -25,12 +25,10 @@ pub async fn message(ctx: &Context, data: &Data, msg: &Message) -> Result<(), Er
     let content = rules
         .iter()
         .filter(|r| msg.content.contains(&r.trigger))
-        // i'll find a better way later:tm:
-        .map(|r| r.reply.clone())
-        .reduce(|a, b| format!("{a} {b}"))
-        .unwrap_or_else(|| "".to_string());
+        .map(|r| r.reply.as_str())
+        .fold(String::new(), |a, b| format!("{a} {b}"));
 
-    out += &content;
+    out.push_str(&content);
 
     if !out.is_empty() {
         msg.reply(ctx, out).await?;

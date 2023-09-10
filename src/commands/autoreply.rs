@@ -8,7 +8,7 @@ pub async fn autoreply(_ctx: Context<'_>) -> Result<(), Error> {
     unreachable!();
 }
 
-#[command(slash_command)]
+#[command(slash_command, prefix_command)]
 async fn list(ctx: Context<'_>) -> Result<(), Error> {
     let rules = query_as!(AutoReply, "select * from replies")
         .fetch_all(&ctx.data().db)
@@ -32,8 +32,8 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-#[command(slash_command)]
-async fn add(ctx: Context<'_>, trigger: String, reply: String) -> Result<(), Error> {
+#[command(slash_command, prefix_command)]
+async fn add(ctx: Context<'_>, trigger: String, #[rest] reply: String) -> Result<(), Error> {
     let result = query!(
         "insert into replies
         values(?, ?)",
@@ -41,13 +41,14 @@ async fn add(ctx: Context<'_>, trigger: String, reply: String) -> Result<(), Err
         reply
     )
     .execute(&ctx.data().db)
-    .await?;
+    .await;
 
     ctx.send(|m| {
-        m.content(if result.rows_affected() == 0 {
-            "Failed to add a rule, does it already exist?".to_string()
-        } else {
-            format!("Added rule `{}`", trigger)
+        m.content(match result {
+            Ok(_) => format!("Added rule `{}`", trigger),
+            Err(e) => {
+                format!("Failed to add rule: ```rs\n{}\n```", e.to_string())
+            }
         })
         .ephemeral(true)
     })
@@ -56,7 +57,7 @@ async fn add(ctx: Context<'_>, trigger: String, reply: String) -> Result<(), Err
     Ok(())
 }
 
-#[command(slash_command)]
+#[command(slash_command, prefix_command)]
 async fn remove(ctx: Context<'_>, trigger: String) -> Result<(), Error> {
     let result = query!(
         "delete from replies

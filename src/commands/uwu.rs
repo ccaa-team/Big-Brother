@@ -1,10 +1,12 @@
 use crate::{Context, Error};
 use poise::{command, serenity_prelude::Webhook};
 
-#[command(slash_command, guild_only)]
+#[command(slash_command, prefix_command, guild_only)]
 pub async fn uwu(ctx: Context<'_>, #[rest] text: String) -> Result<(), Error> {
     let out = crate::uwu::uwuify(text);
-    ctx.send(|m| m.ephemeral(true).content("uwu")).await?;
+    if ctx.prefix() == "/" {
+        ctx.send(|m| m.ephemeral(true).content("uwu")).await?;
+    }
 
     let hook = if let Ok(hook) = get_webhook(ctx).await {
         hook
