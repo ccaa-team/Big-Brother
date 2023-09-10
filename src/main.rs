@@ -85,6 +85,7 @@ async fn main() {
                     .user
                     .avatar_url()
                     .unwrap_or_else(|| globals::BACKUP_PFP.to_string());
+                let bot = ready.user.clone();
                 let logs_channel = UserId::from(globals::VIRT_ID)
                     .create_dm_channel(ctx)
                     .await?;
@@ -96,6 +97,7 @@ async fn main() {
 
                 Ok(Data {
                     bot_pfp,
+                    bot,
                     logs_channel,
                     cursed_channel,
                     db,

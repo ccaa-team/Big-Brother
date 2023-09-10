@@ -1,8 +1,9 @@
-use poise::serenity_prelude::{ChannelId, PrivateChannel};
+use poise::serenity_prelude::{ChannelId, CurrentUser, PrivateChannel};
 use sqlx::SqlitePool;
 
 pub struct Data {
     pub bot_pfp: String,
+    pub bot: CurrentUser,
     pub logs_channel: PrivateChannel,
     pub cursed_channel: ChannelId,
     pub db: SqlitePool,
