@@ -14,9 +14,12 @@
       };
     in {
     devShell = pkgs.mkShell {
-      DATABASE_URL = "sqlite://autovirt.db";
+      DATABASE_URL="postgresql:///autovirt";
       buildInputs = with pkgs; [
+        pkg-config
+        openssl
         sqlx-cli
+        cmake
       ];
     };
   });

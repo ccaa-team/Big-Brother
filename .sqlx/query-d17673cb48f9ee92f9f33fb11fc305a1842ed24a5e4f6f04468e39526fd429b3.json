@@ -1,36 +1,36 @@
 {
-  "db_name": "SQLite",
+  "db_name": "PostgreSQL",
   "query": "select * from moyai",
   "describe": {
     "columns": [
       {
-        "name": "message_id",
         "ordinal": 0,
+        "name": "message_id",
         "type_info": "Text"
       },
       {
-        "name": "post_id",
         "ordinal": 1,
+        "name": "post_id",
         "type_info": "Text"
       },
       {
-        "name": "message_content",
         "ordinal": 2,
+        "name": "message_content",
         "type_info": "Text"
       },
       {
-        "name": "moyai_count",
         "ordinal": 3,
-        "type_info": "Int64"
+        "name": "moyai_count",
+        "type_info": "Int8"
       },
       {
-        "name": "author",
         "ordinal": 4,
+        "name": "author",
         "type_info": "Text"
       }
     ],
     "parameters": {
-      "Right": 0
+      "Left": []
     },
     "nullable": [
       false,

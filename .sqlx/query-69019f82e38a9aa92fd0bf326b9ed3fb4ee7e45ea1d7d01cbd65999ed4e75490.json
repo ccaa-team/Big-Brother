@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "update moyai\n                    set post_id = $1\n                    where message_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "69019f82e38a9aa92fd0bf326b9ed3fb4ee7e45ea1d7d01cbd65999ed4e75490"
+}

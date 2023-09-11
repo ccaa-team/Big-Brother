@@ -22,9 +22,10 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
 
     ctx.send(|m| {
         m.embed(|e| {
-            e.title("AutoReply Rules")
-                .author(|a| a.icon_url(&ctx.data().bot_pfp))
-                .description(list)
+            if let Some(pfp) = &ctx.data().bot_pfp {
+                e.author(|a| a.icon_url(pfp));
+            }
+            e.title("AutoReply Rules").description(list)
         })
     })
     .await?;
@@ -36,7 +37,7 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
 async fn add(ctx: Context<'_>, trigger: String, #[rest] reply: String) -> Result<(), Error> {
     let result = query!(
         "insert into replies
-        values(?, ?)",
+        values($1, $2)",
         trigger,
         reply
     )
@@ -61,7 +62,7 @@ async fn add(ctx: Context<'_>, trigger: String, #[rest] reply: String) -> Result
 async fn remove(ctx: Context<'_>, trigger: String) -> Result<(), Error> {
     let result = query!(
         "delete from replies
-        where trigger = ?",
+        where trigger = $1",
         trigger
     )
     .execute(&ctx.data().db)

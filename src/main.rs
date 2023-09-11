@@ -1,22 +1,20 @@
-#![feature(async_closure)]
-
 mod commands;
 mod events;
-mod globals;
 pub mod structs;
 mod uwu;
-
-use std::{fs::File, io::Read};
-use structs::*;
-
 use poise::{
-    serenity_prelude::{ChannelId, GatewayIntents, UserId},
-    FrameworkError,
+    serenity_prelude::{ChannelId, GatewayIntents, Ready, UserId},
+    Framework, FrameworkError,
 };
-use sqlx::{sqlite::SqliteConnectOptions, Pool, Sqlite};
+use shuttle_poise::ShuttlePoise;
+use shuttle_runtime::Context as ShuttleContext;
+use shuttle_secrets::SecretStore;
+use sqlx::PgPool;
+use structs::*;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
+pub const MOYAI: &str = "🗿";
 
 async fn error_handler(err: FrameworkError<'_, Data, Error>) {
     match err {
@@ -59,17 +57,58 @@ async fn error_handler(err: FrameworkError<'_, Data, Error>) {
     }
 }
 
-#[tokio::main]
-async fn main() {
-    let token = {
-        let mut f = File::open("token.txt").expect("Token file not found");
-        let mut s = String::new();
-        f.read_to_string(&mut s).expect("Failed to read token.");
-        s
-    };
+async fn setup(
+    secret_store: &SecretStore,
+    ctx: &poise::serenity_prelude::Context,
+    ready: &Ready,
+    frm: &Framework<Data, Error>,
+    db: PgPool,
+) -> Result<Data, Error> {
+    poise::builtins::register_globally(ctx, &frm.options().commands).await?;
+    let bot_pfp = ready.user.avatar_url();
+    let bot = ready.user.clone();
+    let logs_channel = UserId::from(852877128844050432)
+        .create_dm_channel(ctx)
+        .await?;
+    let cursed_id: u64 = secret_store
+        .get("cursed_board")
+        .context("'cursed_board' not found")?
+        .parse()
+        .context("'cursed_board' is not a number")?;
+
+    let threshold: u64 = secret_store
+        .get("threshold")
+        .context("'threshold' not found")?
+        .parse()
+        .context("'threshold' is not a number")?;
+
+    let cursed_channel = ChannelId::from(cursed_id);
+    let startup = chrono::Local::now();
+
+    Ok(Data {
+        bot_pfp,
+        bot,
+        logs_channel,
+        cursed_channel,
+        threshold,
+        db,
+        startup,
+    })
+}
+
+#[shuttle_runtime::main]
+async fn main(
+    #[shuttle_secrets::Secrets] secret_store: SecretStore,
+    #[shuttle_shared_db::Postgres] db: PgPool,
+) -> ShuttlePoise<Data, Error> {
+    let token = secret_store.get("token").context("'token' not found")?;
+    sqlx::migrate!()
+        .run(&db)
+        .await
+        .context("Migration failed")?;
 
     use commands::*;
-    let commands = vec![uwu(), moyai(), autoreply(), scan(), calc()];
+    let commands = vec![uwu(), moyai(), autoreply(), scan(), calc(), uptime()];
 
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT
@@ -79,30 +118,7 @@ async fn main() {
         .token(token)
         .intents(intents)
         .setup(|ctx, ready, frm| {
-            Box::pin(async move {
-                poise::builtins::register_globally(ctx, &frm.options().commands).await?;
-                let bot_pfp = ready
-                    .user
-                    .avatar_url()
-                    .unwrap_or_else(|| globals::BACKUP_PFP.to_string());
-                let bot = ready.user.clone();
-                let logs_channel = UserId::from(globals::VIRT_ID)
-                    .create_dm_channel(ctx)
-                    .await?;
-                let cursed_channel = ChannelId::from(globals::CURSED_BOARD);
-                let options = SqliteConnectOptions::new()
-                    .filename("autovirt.db")
-                    .create_if_missing(true);
-                let db = Pool::<Sqlite>::connect_with(options).await?;
-
-                Ok(Data {
-                    bot_pfp,
-                    bot,
-                    logs_channel,
-                    cursed_channel,
-                    db,
-                })
-            })
+            Box::pin(async move { setup(&secret_store, ctx, ready, frm, db).await })
         })
         .options(poise::FrameworkOptions {
             commands,
@@ -119,7 +135,10 @@ async fn main() {
                 ..Default::default()
             },
             ..Default::default()
-        });
+        })
+        .build()
+        .await
+        .map_err(shuttle_runtime::CustomError::new);
 
-    framework.run().await.unwrap();
+    Ok(framework?.into())
 }

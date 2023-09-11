@@ -8,13 +8,15 @@ pub async fn uwu(ctx: Context<'_>, #[rest] text: String) -> Result<(), Error> {
         ctx.send(|m| m.ephemeral(true).content("uwu")).await?;
     }
 
-    let hook = if let Ok(hook) = get_webhook(ctx).await {
-        hook
-    } else {
-        ctx.send(|m| m.ephemeral(true).content("Unable to find/create webhook"))
-            .await?;
-        return Ok(());
+    let hook = match get_webhook(ctx).await {
+        Ok(hook) => hook,
+        Err(e) => {
+            let content = format!("Unable to find/create webhook: {}", e);
+            ctx.send(|m| m.ephemeral(true).content(content)).await?;
+            return Ok(());
+        }
     };
+
     let user = match ctx.author_member().await {
         Some(u) => u,
         None => unreachable!(),
@@ -34,7 +36,9 @@ async fn create_webhook(ctx: Context<'_>) -> Result<Webhook, Error> {
     let channel = ctx.channel_id();
 
     let mut hook = channel.create_webhook(ctx, "AutoVirt: uwu").await?;
-    hook.edit_avatar(ctx, ctx.data().bot_pfp.as_str()).await?;
+    if let Some(pfp) = &ctx.data().bot_pfp {
+        hook.edit_avatar(ctx, pfp.as_str()).await?;
+    }
 
     Ok(hook)
 }

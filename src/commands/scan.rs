@@ -1,20 +1,22 @@
 use poise::command;
-use sqlx::query_as;
+use sqlx::{query, query_as};
 
 use crate::{
     events::{create_entry, update_entry},
-    globals::{MOYAI, VIRT_ID},
     structs::BoardEntry,
-    Context, Error,
+    Context, Error, MOYAI,
 };
 
 async fn viwty(ctx: Context<'_>) -> Result<bool, Error> {
-    Ok(ctx.author().id == VIRT_ID)
+    Ok(ctx.author().id == 852877128844050432)
 }
 
 #[command(prefix_command, check = "viwty", guild_only)]
 pub async fn scan(ctx: Context<'_>) -> Result<(), Error> {
     ctx.send(|m| m.content("Scanning")).await?;
+    query!("delete from moyai *")
+        .execute(&ctx.data().db)
+        .await?;
 
     let g = ctx.guild_id().unwrap();
     let channels = g.channels(ctx).await?;
@@ -24,7 +26,7 @@ pub async fn scan(ctx: Context<'_>) -> Result<(), Error> {
         let mut total = vec![];
         let mut id = None;
         loop {
-            let mut list = channel
+            let list = channel
                 .messages(ctx, |l| {
                     l.limit(100);
                     if let Some(id) = id {
@@ -32,7 +34,11 @@ pub async fn scan(ctx: Context<'_>) -> Result<(), Error> {
                     }
                     l
                 })
-                .await?;
+                .await;
+            let mut list = match list {
+                Ok(l) => l,
+                Err(_) => break,
+            };
             if list.is_empty() {
                 break;
             }
@@ -51,7 +57,7 @@ pub async fn scan(ctx: Context<'_>) -> Result<(), Error> {
             if let Some(reactions) = reactions.first() {
                 let id = msg.id.to_string();
                 let count = reactions.count as i64;
-                match query_as!(BoardEntry, "select * from moyai where message_id = ?", id)
+                match query_as!(BoardEntry, "select * from moyai where message_id = $1", id)
                     .fetch_optional(&ctx.data().db)
                     .await?
                 {

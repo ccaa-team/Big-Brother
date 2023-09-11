@@ -3,11 +3,7 @@ use std::vec;
 use poise::command;
 use sqlx::query_as;
 
-use crate::{
-    globals::{MOYAI, THRESHOLD},
-    structs::BoardEntry,
-    Context, Error,
-};
+use crate::{structs::BoardEntry, Context, Error, MOYAI};
 
 #[command(slash_command, subcommands("list", "top"))]
 pub async fn moyai(_ctx: Context<'_>) -> Result<(), Error> {
@@ -29,7 +25,7 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
         .await?;
     let list: Vec<_> = list
         .iter()
-        .filter(|p| p.moyai_count >= THRESHOLD as i64)
+        .filter(|p| p.moyai_count >= ctx.data().threshold as i64)
         .collect();
     ctx.send(|m| {
         for c in list.chunks(25) {
@@ -51,7 +47,7 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 #[command(slash_command, prefix_command)]
-async fn top(ctx: Context<'_>, amount: Option<u8>) -> Result<(), Error> {
+async fn top(ctx: Context<'_>, amount: Option<i64>) -> Result<(), Error> {
     let amount = amount.unwrap_or(10);
 
     let entries = query_as!(
@@ -59,7 +55,7 @@ async fn top(ctx: Context<'_>, amount: Option<u8>) -> Result<(), Error> {
         "select *
         from moyai
         order by moyai_count desc
-        limit ?",
+        limit $1",
         amount
     )
     .fetch_all(&ctx.data().db)

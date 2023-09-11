@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "delete from replies\n        where trigger = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f62f9a3e1c95edccd4ae65409a68e367fc8ff088200b3bc112e7a39b1db7cf24"
+}

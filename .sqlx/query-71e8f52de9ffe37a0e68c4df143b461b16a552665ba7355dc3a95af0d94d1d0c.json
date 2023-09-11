@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "delete from moyai *",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "71e8f52de9ffe37a0e68c4df143b461b16a552665ba7355dc3a95af0d94d1d0c"
+}

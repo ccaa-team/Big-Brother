@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "update moyai\n                    set moyai_count = $1\n                    where message_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bb5859cedc644041d0b757f46af528759b51702d81536aa9de06533adc760feb"
+}

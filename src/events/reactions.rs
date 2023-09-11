@@ -1,11 +1,7 @@
 use poise::serenity_prelude::{Context, Message, MessageId, MessageReaction, Reaction};
 use sqlx::{query, query_as};
 
-use crate::{
-    globals::{self, CURSED_BOARD, MOYAI, THRESHOLD},
-    structs::BoardEntry,
-    Data, Error,
-};
+use crate::{structs::BoardEntry, Data, Error, MOYAI};
 
 async fn create_post(
     ctx: &Context,
@@ -39,34 +35,28 @@ pub async fn update_entry(
 ) -> Result<(), Error> {
     sqlx::query!(
         "update moyai
-         set moyai_count = ?
-         where message_id = ?",
+         set moyai_count = $1
+         where message_id = $2",
         count,
         post.message_id
     )
     .execute(&data.db)
     .await?;
 
-    if *count as u64 >= globals::THRESHOLD && post.post_id.is_none() {
+    if *count as u64 >= data.threshold && post.post_id.is_none() {
         let id = create_post(ctx, data, count, msg).await?;
         let id = id.to_string();
         sqlx::query!(
             "update moyai
-             set post_id = ?
-             where message_id = ?",
+             set post_id = $1
+             where message_id = $2",
             id,
             post.message_id
         )
         .execute(&data.db)
         .await?;
     } else {
-        let mut msg = ctx
-            .http
-            .get_message(
-                CURSED_BOARD,
-                post.post_id.as_ref().unwrap().parse().unwrap(),
-            )
-            .await?;
+        let mut msg = data.cursed_channel.message(ctx, msg.id).await?;
         msg.edit(ctx, |m| m.content(format!("{} {}", count, MOYAI)))
             .await?;
     }
@@ -80,15 +70,15 @@ pub async fn create_entry(
     msg: &Message,
     reactions: &MessageReaction,
 ) -> Result<(), Error> {
+    let count = reactions.count as i64;
     let id = msg.id.to_string();
-    let (post, author) = if reactions.count >= globals::THRESHOLD {
+    let (post, author) = if reactions.count >= data.threshold {
         let id = create_post(ctx, data, &(reactions.count as i64), msg).await?;
         let id = id.to_string();
-        let count = reactions.count as i64;
         sqlx::query!(
             "update moyai
-            set moyai_count = ?
-            where message_id = ?",
+            set moyai_count = $1
+            where message_id = $2",
             count,
             id
         )
@@ -98,11 +88,9 @@ pub async fn create_entry(
     } else {
         (None, msg.author.name.to_owned())
     };
-    let author = author.to_string();
-    let count = reactions.count.to_string();
     sqlx::query!(
         "insert into moyai
-        values(?, ?, ?, ?, ?)",
+        values($1, $2, $3, $4, $5)",
         id,
         post,
         msg.content,
@@ -116,7 +104,7 @@ pub async fn create_entry(
 }
 
 pub async fn reaction_add(ctx: &Context, data: &Data, reaction: &Reaction) -> Result<(), Error> {
-    if !reaction.emoji.unicode_eq(MOYAI) || reaction.channel_id == CURSED_BOARD {
+    if !reaction.emoji.unicode_eq(MOYAI) || reaction.channel_id == data.cursed_channel {
         return Ok(());
     }
     let msg = reaction.message(ctx).await?;
@@ -131,7 +119,7 @@ pub async fn reaction_add(ctx: &Context, data: &Data, reaction: &Reaction) -> Re
     {
         let id = msg.id.to_string();
         let count = reactions.count as i64;
-        match query_as!(BoardEntry, "select * from moyai where message_id = ?", id)
+        match query_as!(BoardEntry, "select * from moyai where message_id = $1", id)
             .fetch_optional(&data.db)
             .await?
         {
@@ -150,7 +138,7 @@ pub async fn reaction_remove(ctx: &Context, data: &Data, reaction: &Reaction) ->
     let msg = reaction.message(ctx).await?;
     let id = msg.id.to_string();
 
-    let post = query_as!(BoardEntry, "select * from moyai where message_id = ?", id)
+    let post = query_as!(BoardEntry, "select * from moyai where message_id = $1", id)
         .fetch_optional(&data.db)
         .await?;
     if post.is_none() {
@@ -160,10 +148,7 @@ pub async fn reaction_remove(ctx: &Context, data: &Data, reaction: &Reaction) ->
 
     // This is guaranteed to be Some()
     if let Some(post_id) = post.unwrap().post_id {
-        let post = ctx
-            .http
-            .get_message(CURSED_BOARD, post_id.parse().unwrap())
-            .await?;
+        let post = data.cursed_channel.message(ctx, msg.id).await?;
         let reactions = msg
             .reactions
             .iter()
@@ -171,12 +156,12 @@ pub async fn reaction_remove(ctx: &Context, data: &Data, reaction: &Reaction) ->
             .collect::<Vec<_>>();
         let reactions = reactions.first();
         if let Some(reactions) = reactions {
-            if reactions.count < THRESHOLD {
+            if reactions.count < data.threshold {
                 post.delete(ctx).await?;
                 query!(
                     "update moyai
-                    set post_id = ?
-                    where message_id = ?",
+                    set post_id = $1
+                    where message_id = $2",
                     None::<String>,
                     id
                 )
@@ -186,17 +171,15 @@ pub async fn reaction_remove(ctx: &Context, data: &Data, reaction: &Reaction) ->
                 let count = reactions.count as i64;
                 query!(
                     "update moyai
-                    set moyai_count = ?
-                    where message_id = ?",
+                    set moyai_count = $1
+                    where message_id = $2",
                     count,
                     id
                 )
                 .execute(&data.db)
                 .await?;
-                let mut msg = ctx
-                    .http
-                    .get_message(CURSED_BOARD, post_id.parse().unwrap())
-                    .await?;
+                let post_id = post_id.parse::<u64>().unwrap();
+                let mut msg = data.cursed_channel.message(ctx, post_id).await?;
                 msg.edit(ctx, |m| m.content(format!("{} {}", count, MOYAI)))
                     .await?;
             }
@@ -204,8 +187,8 @@ pub async fn reaction_remove(ctx: &Context, data: &Data, reaction: &Reaction) ->
             post.delete(ctx).await?;
             query!(
                 "update moyai
-                    set post_id = ?
-                    where message_id = ?",
+                    set post_id = $1
+                    where message_id = $2",
                 None::<String>,
                 id
             )

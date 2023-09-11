@@ -1,12 +1,16 @@
+use chrono::{DateTime, Local};
+
 use poise::serenity_prelude::{ChannelId, CurrentUser, PrivateChannel};
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 pub struct Data {
-    pub bot_pfp: String,
+    pub bot_pfp: Option<String>,
     pub bot: CurrentUser,
     pub logs_channel: PrivateChannel,
     pub cursed_channel: ChannelId,
-    pub db: SqlitePool,
+    pub db: PgPool,
+    pub startup: DateTime<Local>,
+    pub threshold: u64,
 }
 
 pub struct BoardEntry {

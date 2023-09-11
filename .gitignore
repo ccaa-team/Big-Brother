@@ -5,10 +5,8 @@ build/
 # MacOS Cache
 .DS_Store
 
-# Secrets
-autovirt.*
-*.txt
 .direnv
+Secret*.toml
 
 # Added by cargo
 

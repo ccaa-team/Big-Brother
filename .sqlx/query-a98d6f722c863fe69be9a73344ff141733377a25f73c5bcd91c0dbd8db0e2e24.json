@@ -1,36 +1,38 @@
 {
-  "db_name": "SQLite",
-  "query": "select *\n        from moyai\n        order by moyai_count desc\n        limit ?",
+  "db_name": "PostgreSQL",
+  "query": "select * from moyai where message_id = $1",
   "describe": {
     "columns": [
       {
-        "name": "message_id",
         "ordinal": 0,
+        "name": "message_id",
         "type_info": "Text"
       },
       {
-        "name": "post_id",
         "ordinal": 1,
+        "name": "post_id",
         "type_info": "Text"
       },
       {
-        "name": "message_content",
         "ordinal": 2,
+        "name": "message_content",
         "type_info": "Text"
       },
       {
-        "name": "moyai_count",
         "ordinal": 3,
-        "type_info": "Int64"
+        "name": "moyai_count",
+        "type_info": "Int8"
       },
       {
-        "name": "author",
         "ordinal": 4,
+        "name": "author",
         "type_info": "Text"
       }
     ],
     "parameters": {
-      "Right": 1
+      "Left": [
+        "Text"
+      ]
     },
     "nullable": [
       false,
@@ -40,5 +42,5 @@
       false
     ]
   },
-  "hash": "3c4ce3326efd9e30fc42206e50e5043ae5a264e40202a5368a07ac4c0dd78199"
+  "hash": "a98d6f722c863fe69be9a73344ff141733377a25f73c5bcd91c0dbd8db0e2e24"
 }

@@ -1,21 +1,21 @@
 {
-  "db_name": "SQLite",
+  "db_name": "PostgreSQL",
   "query": "select * from replies",
   "describe": {
     "columns": [
       {
-        "name": "trigger",
         "ordinal": 0,
-        "type_info": "Text"
+        "name": "trigger",
+        "type_info": "Varchar"
       },
       {
-        "name": "reply",
         "ordinal": 1,
-        "type_info": "Text"
+        "name": "reply",
+        "type_info": "Varchar"
       }
     ],
     "parameters": {
-      "Right": 0
+      "Left": []
     },
     "nullable": [
       false,
