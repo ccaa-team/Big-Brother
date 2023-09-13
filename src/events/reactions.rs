@@ -55,7 +55,7 @@ pub async fn update_entry(
         )
         .execute(&data.db)
         .await?;
-    } else {
+    } else if post.post_id.is_some() {
         let mut msg = data.cursed_channel.message(ctx, msg.id).await?;
         msg.edit(ctx, |m| m.content(format!("{} {}", count, MOYAI)))
             .await?;
