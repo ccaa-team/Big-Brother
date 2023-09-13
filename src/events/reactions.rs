@@ -180,7 +180,6 @@ pub async fn reaction_remove(ctx: &Context, data: &Data, reaction: &Reaction) ->
                 )
                 .execute(&data.db)
                 .await?;
-                let post_id = post_id.parse::<u64>().unwrap();
                 let mut msg = data.cursed_channel.message(ctx, post_id).await?;
                 msg.edit(ctx, |m| m.content(format!("{} {}", count, MOYAI)))
                     .await?;
