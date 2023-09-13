@@ -149,7 +149,8 @@ pub async fn reaction_remove(ctx: &Context, data: &Data, reaction: &Reaction) ->
 
     // This is guaranteed to be Some()
     if let Some(post_id) = post.unwrap().post_id {
-        let post = data.cursed_channel.message(ctx, msg.id).await?;
+        let post_id: u64 = post_id.parse().unwrap();
+        let post = data.cursed_channel.message(ctx, post_id).await?;
         let reactions = msg
             .reactions
             .iter()
