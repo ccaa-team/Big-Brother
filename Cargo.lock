@@ -141,7 +141,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
+ "lazy_static",
  "mexprp",
+ "nekosbest",
  "poise",
  "rand",
  "shuttle-poise",
@@ -1237,6 +1239,22 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "tempfile",
+]
+
+[[package]]
+name = "nekosbest"
+version = "0.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a830c5bafe71bfd05238f82f043ebaa90ca14651f19515ba7cfd02d73c0559d2"
+dependencies = [
+ "chrono",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "url",
+ "urlencoding",
 ]
 
 [[package]]

@@ -108,7 +108,15 @@ async fn main(
         .context("Migration failed")?;
 
     use commands::*;
-    let commands = vec![uwu(), moyai(), autoreply(), scan(), calc(), uptime()];
+    let commands = vec![
+        uwu(),
+        moyai(),
+        autoreply(),
+        scan(),
+        calc(),
+        uptime(),
+        neko(),
+    ];
 
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT
