@@ -137,7 +137,7 @@ async fn main(
             prefix_options: poise::PrefixFrameworkOptions {
                 prefix: Some(";".into()),
                 edit_tracker: Some(poise::EditTracker::for_timespan(
-                    std::time::Duration::from_secs(120),
+                    std::time::Duration::from_secs(60 * 60),
                 )),
                 case_insensitive_commands: true,
                 ..Default::default()

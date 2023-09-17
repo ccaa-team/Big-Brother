@@ -1,15 +1,10 @@
-mod autoreply;
-mod calc;
-mod moyai;
-mod neko;
-mod scan;
-mod uptime;
-mod uwu;
+macro_rules! cmd {
+    ($($u:tt), *) => {
+        $(
+            mod $u;
+            pub use $u::*;
+        )*
+    };
+}
 
-pub use autoreply::*;
-pub use calc::*;
-pub use moyai::*;
-pub use neko::*;
-pub use scan::*;
-pub use uptime::*;
-pub use uwu::*;
+cmd!(autoreply, calc, moyai, neko, scan, uptime, uwu);
