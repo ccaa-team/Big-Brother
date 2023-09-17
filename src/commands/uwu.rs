@@ -2,6 +2,7 @@ use crate::{Context, Error};
 use poise::{command, serenity_prelude::Webhook};
 
 #[command(slash_command, prefix_command, guild_only)]
+/// uwuify a string
 pub async fn uwu(ctx: Context<'_>, #[rest] text: String) -> Result<(), Error> {
     let out = crate::uwu::uwuify(text);
     if ctx.prefix() == "/" {

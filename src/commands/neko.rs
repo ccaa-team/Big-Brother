@@ -19,10 +19,13 @@ async fn autocomplete_category<'a>(_ctx: Context<'_>, partial: &'a str) -> Vec<S
 }
 
 #[command(slash_command, prefix_command)]
+/// Get a random image/gif from a category you choose by using nekos.best
 pub async fn neko(
     ctx: Context<'_>,
     #[autocomplete = "autocomplete_category"] category: String,
+    amount: Option<u8>,
 ) -> Result<(), Error> {
+    let amount = amount.unwrap_or_else(|| 1).clamp(1, 10);
     let category = if CATEGORIES.contains(&category.as_str()) {
         Category::from_url_name(&category).unwrap()
     } else {
@@ -36,9 +39,21 @@ pub async fn neko(
         return Ok(());
     };
 
-    let url = nekosbest::get(category).await?.url;
+    let imgs = nekosbest::get_amount(category, amount).await?;
 
-    ctx.send(|m| m.embed(|e| e.image(url))).await?;
+    ctx.send(|m| {
+        for img in imgs.iter() {
+            let url = &img.url;
+            let source = match &img.details {
+                nekosbest::details::Details::Image(d) => d.source_url.as_str(),
+                nekosbest::details::Details::Gif(d) => &d.anime_name,
+                _ => todo!(),
+            };
+            m.embed(|e| e.image(url).footer(|f| f.text(source)));
+        }
+        m
+    })
+    .await?;
 
     Ok(())
 }

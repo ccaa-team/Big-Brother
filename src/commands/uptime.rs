@@ -3,6 +3,7 @@ use poise::command;
 use crate::{Context, Error};
 
 #[command(slash_command, prefix_command)]
+/// Show the bot's uptime
 pub async fn uptime(ctx: Context<'_>) -> Result<(), Error> {
     // good luck fucking with the clock
     let now = chrono::Local::now();

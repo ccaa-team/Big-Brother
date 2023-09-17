@@ -19,6 +19,7 @@ fn truncate(s: &str, max_chars: usize) -> &str {
 }
 
 #[command(slash_command, prefix_command)]
+/// List all the moyai board entries that fit the threshold
 async fn list(ctx: Context<'_>) -> Result<(), Error> {
     let list = query_as!(BoardEntry, "select * from moyai")
         .fetch_all(&ctx.data().db)
@@ -47,6 +48,7 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 #[command(slash_command, prefix_command)]
+/// List the top moyai board entries (defaults to 10)
 async fn top(ctx: Context<'_>, amount: Option<i64>) -> Result<(), Error> {
     let amount = amount.unwrap_or(10);
 

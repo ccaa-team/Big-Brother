@@ -9,6 +9,7 @@ pub async fn autoreply(_ctx: Context<'_>) -> Result<(), Error> {
 }
 
 #[command(slash_command, prefix_command)]
+/// List all the autoreply rules
 async fn list(ctx: Context<'_>) -> Result<(), Error> {
     let rules = query_as!(AutoReply, "select * from replies")
         .fetch_all(&ctx.data().db)
@@ -34,6 +35,7 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 #[command(slash_command, prefix_command)]
+/// Add an autoreply rule
 async fn add(ctx: Context<'_>, trigger: String, #[rest] reply: String) -> Result<(), Error> {
     let result = query!(
         "insert into replies
@@ -59,6 +61,7 @@ async fn add(ctx: Context<'_>, trigger: String, #[rest] reply: String) -> Result
 }
 
 #[command(slash_command, prefix_command)]
+/// Remove an autoreply rule
 async fn remove(ctx: Context<'_>, trigger: String) -> Result<(), Error> {
     let result = query!(
         "delete from replies
