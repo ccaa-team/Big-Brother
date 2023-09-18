@@ -25,7 +25,7 @@ pub async fn neko(
     #[autocomplete = "autocomplete_category"] category: String,
     amount: Option<u8>,
 ) -> Result<(), Error> {
-    let amount = amount.unwrap_or_else(|| 1).clamp(1, 10);
+    let amount = amount.unwrap_or(1).clamp(1, 10);
     let category = if CATEGORIES.contains(&category.as_str()) {
         Category::from_url_name(&category).unwrap()
     } else {
