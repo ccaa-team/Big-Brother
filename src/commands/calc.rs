@@ -1,6 +1,13 @@
+use mexprp::Config;
 use poise::command;
 
 use crate::{Context, Error};
+
+static CONFIG: Config = Config {
+    implicit_multiplication: false,
+    precision: 1024,
+    sqrt_both: true,
+};
 
 #[command(slash_command, prefix_command, track_edits)]
 /// Believe it or not, this is a calculator command
