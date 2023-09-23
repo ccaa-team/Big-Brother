@@ -25,7 +25,7 @@ pub async fn neko(
     #[autocomplete = "autocomplete_category"] category: String,
     amount: Option<u8>,
 ) -> Result<(), Error> {
-    let amount = amount.unwrap_or(1).clamp(1, 10);
+    let amount = amount.unwrap_or(1).clamp(1, 20);
     let category = if CATEGORIES.contains(&category.as_str()) {
         Category::from_url_name(&category).unwrap()
     } else {
@@ -41,19 +41,21 @@ pub async fn neko(
 
     let imgs = nekosbest::get_amount(category, amount).await?;
 
-    ctx.send(|m| {
-        for img in imgs.iter() {
-            let url = &img.url;
-            let source = match &img.details {
-                nekosbest::details::Details::Image(d) => d.source_url.as_str(),
-                nekosbest::details::Details::Gif(d) => &d.anime_name,
-                _ => todo!(),
-            };
-            m.embed(|e| e.image(url).footer(|f| f.text(source)));
-        }
-        m
-    })
-    .await?;
+    for c in imgs.chunks(10) {
+        ctx.send(|m| {
+            for img in c.iter() {
+                let url = &img.url;
+                let source = match &img.details {
+                    nekosbest::details::Details::Image(d) => d.source_url.as_str(),
+                    nekosbest::details::Details::Gif(d) => &d.anime_name,
+                    _ => todo!(),
+                };
+                m.embed(|e| e.image(url).footer(|f| f.text(source)));
+            }
+            m
+        })
+        .await?;
+    }
 
     Ok(())
 }
