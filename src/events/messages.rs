@@ -26,7 +26,8 @@ pub async fn message(ctx: &Context, data: &Data, msg: &Message) -> Result<(), Er
         .iter()
         .filter(|r| msg.content.contains(&r.trigger))
         .map(|r| r.reply.as_str())
-        .fold(String::new(), |a, b| format!("{a} {b}"));
+        .collect::<Vec<_>>()
+        .join(" ");
 
     out.push_str(&content);
 

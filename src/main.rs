@@ -2,19 +2,25 @@ mod commands;
 mod events;
 pub mod structs;
 mod uwu;
+use std::collections::BTreeMap;
+
+use dotenv_parser::parse_dotenv;
 use poise::{
     serenity_prelude::{ChannelId, GatewayIntents, Ready, UserId},
     Framework, FrameworkError,
 };
-use shuttle_poise::ShuttlePoise;
-use shuttle_runtime::Context as ShuttleContext;
-use shuttle_secrets::SecretStore;
-use sqlx::PgPool;
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use structs::*;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
 pub const MOYAI: &str = "🗿";
+
+macro_rules! get_env {
+    ($env:tt, $u:literal) => {
+        $env.get($u).expect(&format!("{} not found", $u))
+    };
+}
 
 async fn error_handler(err: FrameworkError<'_, Data, Error>) {
     match err {
@@ -58,7 +64,7 @@ async fn error_handler(err: FrameworkError<'_, Data, Error>) {
 }
 
 async fn setup(
-    secret_store: &SecretStore,
+    env: BTreeMap<String, String>,
     ctx: &poise::serenity_prelude::Context,
     ready: &Ready,
     frm: &Framework<Data, Error>,
@@ -70,17 +76,13 @@ async fn setup(
     let logs_channel = UserId::from(852877128844050432)
         .create_dm_channel(ctx)
         .await?;
-    let cursed_id: u64 = secret_store
-        .get("cursed_board")
-        .context("'cursed_board' not found")?
+    let cursed_id: u64 = get_env!(env, "cursed_board")
         .parse()
-        .context("'cursed_board' is not a number")?;
+        .expect("'cursed_board' is not a number");
 
-    let threshold: u64 = secret_store
-        .get("threshold")
-        .context("'threshold' not found")?
+    let threshold: u64 = get_env!(env, "threshold")
         .parse()
-        .context("'threshold' is not a number")?;
+        .expect("'threshold' is not a number");
 
     let cursed_channel = ChannelId::from(cursed_id);
     let startup = chrono::Local::now();
@@ -96,16 +98,17 @@ async fn setup(
     })
 }
 
-#[shuttle_runtime::main]
-async fn main(
-    #[shuttle_secrets::Secrets] secret_store: SecretStore,
-    #[shuttle_shared_db::Postgres] db: PgPool,
-) -> ShuttlePoise<Data, Error> {
-    let token = secret_store.get("token").context("'token' not found")?;
-    sqlx::migrate!()
-        .run(&db)
-        .await
-        .context("Migration failed")?;
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    let file = std::fs::read_to_string(".env").unwrap();
+    let env = parse_dotenv(&file).unwrap();
+
+    let token = get_env!(env, "token");
+    let db = PgPoolOptions::new()
+        .max_connections(5)
+        .connect_lazy(get_env!(env, "db_url"))?;
+
+    sqlx::migrate!().run(&db).await.expect("Migrations failed.");
 
     use commands::*;
     let commands = vec![
@@ -125,9 +128,7 @@ async fn main(
     let framework = poise::Framework::builder()
         .token(token)
         .intents(intents)
-        .setup(|ctx, ready, frm| {
-            Box::pin(async move { setup(&secret_store, ctx, ready, frm, db).await })
-        })
+        .setup(|ctx, ready, frm| Box::pin(async move { setup(env, ctx, ready, frm, db).await }))
         .options(poise::FrameworkOptions {
             commands,
             on_error: |err| Box::pin(error_handler(err)),
@@ -143,10 +144,8 @@ async fn main(
                 ..Default::default()
             },
             ..Default::default()
-        })
-        .build()
-        .await
-        .map_err(shuttle_runtime::CustomError::new);
+        });
 
-    Ok(framework?.into())
+    framework.run().await.unwrap();
+    Ok(())
 }

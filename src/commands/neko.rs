@@ -31,8 +31,9 @@ pub async fn neko(
     } else {
         ctx.send(|m| {
             m.content(format!(
-                "{} is not a valid category, use the slash command for a list",
-                category
+                "{} is not a valid category, the available categories are:\n{}",
+                category,
+                CATEGORIES.join(", ")
             ))
         })
         .await?;
