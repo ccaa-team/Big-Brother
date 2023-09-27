@@ -3,25 +3,26 @@ use rand::prelude::*;
 const EMOJIS_SIZE: usize = 15;
 
 static EMOJIS: [&str; EMOJIS_SIZE] = [
-    " OwO",
-    " UwU",
-    " >w<",
-    " :3",
-    " o///o",
-    " >///<",
-    " nyaa\\~\\~",
-    " >\\_<",
-    " uguu..,",
-    " -.-",
-    " ^w^",
-    " ^-^",
-    " omo",
-    "〜☆",
-    "~",
+    r#" OwO"#,
+    r#" UwU"#,
+    r#" >w<"#,
+    r#" :3"#,
+    r#" o///o"#,
+    r#" >///<"#,
+    r#" nyaa\~\~"#,
+    r#" >\_<"#,
+    r#" uguu..,"#,
+    r#" -.-"#,
+    r#" ^w^"#,
+    r#" ^-^"#,
+    r#" omo"#,
+    r#"〜☆"#,
+    r#"~"#,
 ];
 
 fn random_emoji() -> String {
-    let idx = rand::thread_rng().gen_range(1..EMOJIS.len());
+    let idx = rand::thread_rng().gen_range(0..EMOJIS_SIZE);
+
     EMOJIS[idx].to_string()
 }
 
@@ -38,11 +39,16 @@ fn uwu_word(word: &str) -> String {
         .replace('d', "t");
 
     let mut n = String::from("n.");
+
     let mut ny = String::from("ny.");
+
     for vowel in VOWELS.iter() {
         n.pop();
+
         n.push(*vowel);
+
         ny.pop();
+
         ny.push(*vowel);
 
         out = out.replace(&n, &ny);
@@ -58,20 +64,17 @@ fn uwu_word(word: &str) -> String {
 
     let first_char = out.chars().next().expect("guh??");
 
-    if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_ratio(1, 3) {
-        let stutters = (rand::thread_rng().gen_range(1..=5) - 3).clamp(1, 2);
-        let mut tmp = String::from("");
-        for _ in 1..=stutters {
-            tmp.push(first_char);
-            tmp.push('-');
-        }
-        for chr in out.chars() {
-            tmp.push(chr);
-        }
-        out = tmp;
-    }
+    let start =
+        if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_ratio(1, 3) {
+            let stutters = rand::thread_rng().gen_range(1..=3);
 
-    out + &end
+            let stutter: String = vec![first_char, '-'].repeat(stutters).iter().collect();
+            stutter
+        } else {
+            "".to_string()
+        };
+
+    start + &out + &end
 }
 
 pub fn uwuify(text: String) -> String {

@@ -2,9 +2,11 @@ mod commands;
 mod events;
 pub mod structs;
 mod uwu;
+
 use std::collections::BTreeMap;
 
 use dotenv_parser::parse_dotenv;
+use lazy_static::lazy_static;
 use poise::{
     serenity_prelude::{ChannelId, GatewayIntents, Ready, UserId},
     Framework, FrameworkError,
@@ -13,12 +15,25 @@ use sqlx::{postgres::PgPoolOptions, PgPool};
 use structs::*;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
+
 pub type Context<'a> = poise::Context<'a, Data, Error>;
+
 pub const MOYAI: &str = "🗿";
 
+lazy_static! {
+    pub static ref ENV: BTreeMap<String, String> = {
+        let file = std::fs::read_to_string(".env").unwrap();
+
+        parse_dotenv(&file).unwrap()
+    };
+}
+
+#[macro_export]
+#[allow(clippy::crate_in_macro_def)]
+
 macro_rules! get_env {
-    ($env:tt, $u:literal) => {
-        $env.get($u).expect(&format!("{} not found", $u))
+    ($u:literal) => {
+        crate::ENV.get($u).expect(&format!("{} not found", $u))
     };
 }
 
@@ -30,9 +45,10 @@ async fn error_handler(err: FrameworkError<'_, Data, Error>) {
                 .send(|m| {
                     // ping me for a slightly higher chance of me noticing
                     m.content("<@852877128844050432>");
+
                     m.embed(|e| {
                         e.title("go yell at virt")
-                            .color(0x2B2D31)
+                            .color(0x2b2d31)
                             .field("Error", format!("```\n{}\n```", error), false)
                             .field(
                                 "Command",
@@ -50,6 +66,7 @@ async fn error_handler(err: FrameworkError<'_, Data, Error>) {
             framework,
         } => {
             let channel = &framework.user_data.logs_channel;
+
             let _ = channel
                 .send_message(ctx, |m| {
                     m.embed(|e| {
@@ -64,27 +81,31 @@ async fn error_handler(err: FrameworkError<'_, Data, Error>) {
 }
 
 async fn setup(
-    env: BTreeMap<String, String>,
     ctx: &poise::serenity_prelude::Context,
     ready: &Ready,
     frm: &Framework<Data, Error>,
     db: PgPool,
 ) -> Result<Data, Error> {
     poise::builtins::register_globally(ctx, &frm.options().commands).await?;
+
     let bot_pfp = ready.user.avatar_url();
+
     let bot = ready.user.clone();
+
     let logs_channel = UserId::from(852877128844050432)
         .create_dm_channel(ctx)
         .await?;
-    let cursed_id: u64 = get_env!(env, "cursed_board")
+
+    let cursed_id: u64 = get_env!("cursed_board")
         .parse()
         .expect("'cursed_board' is not a number");
 
-    let threshold: u64 = get_env!(env, "threshold")
+    let threshold: u64 = get_env!("threshold")
         .parse()
         .expect("'threshold' is not a number");
 
     let cursed_channel = ChannelId::from(cursed_id);
+
     let startup = chrono::Local::now();
 
     Ok(Data {
@@ -99,18 +120,18 @@ async fn setup(
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
-    let file = std::fs::read_to_string(".env").unwrap();
-    let env = parse_dotenv(&file).unwrap();
 
-    let token = get_env!(env, "token");
+async fn main() -> Result<(), Error> {
+    let token = get_env!("token");
+
     let db = PgPoolOptions::new()
         .max_connections(5)
-        .connect_lazy(get_env!(env, "db_url"))?;
+        .connect_lazy(get_env!("db_url"))?;
 
     sqlx::migrate!().run(&db).await.expect("Migrations failed.");
 
     use commands::*;
+
     let commands = vec![
         uwu(),
         moyai(),
@@ -119,6 +140,7 @@ async fn main() -> Result<(), Error> {
         calc(),
         uptime(),
         neko(),
+        sh(),
     ];
 
     let intents = GatewayIntents::GUILD_MESSAGES
@@ -128,7 +150,7 @@ async fn main() -> Result<(), Error> {
     let framework = poise::Framework::builder()
         .token(token)
         .intents(intents)
-        .setup(|ctx, ready, frm| Box::pin(async move { setup(env, ctx, ready, frm, db).await }))
+        .setup(|ctx, ready, frm| Box::pin(async move { setup(ctx, ready, frm, db).await }))
         .options(poise::FrameworkOptions {
             commands,
             on_error: |err| Box::pin(error_handler(err)),
@@ -147,5 +169,6 @@ async fn main() -> Result<(), Error> {
         });
 
     framework.run().await.unwrap();
+
     Ok(())
 }
