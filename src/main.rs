@@ -140,7 +140,6 @@ async fn main() -> Result<(), Error> {
         calc(),
         uptime(),
         neko(),
-        sh(),
     ];
 
     let intents = GatewayIntents::GUILD_MESSAGES
