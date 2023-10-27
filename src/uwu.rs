@@ -68,7 +68,7 @@ fn uwu_word(word: &str) -> String {
         if out.len() > 2 && first_char.is_alphanumeric() && rand::thread_rng().gen_ratio(1, 3) {
             let stutters = rand::thread_rng().gen_range(1..=3);
 
-            let stutter: String = vec![first_char, '-'].repeat(stutters).iter().collect();
+            let stutter: String = [first_char, '-'].repeat(stutters).iter().collect();
             stutter
         } else {
             "".to_string()

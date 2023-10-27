@@ -50,7 +50,7 @@ async fn add(ctx: Context<'_>, trigger: String, #[rest] reply: String) -> Result
         m.content(match result {
             Ok(_) => format!("Added rule `{}`", trigger),
             Err(e) => {
-                format!("Failed to add rule: ```rs\n{}\n```", e.to_string())
+                format!("Failed to add rule: ```rs\n{}\n```", e)
             }
         })
         .ephemeral(true)
