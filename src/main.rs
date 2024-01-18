@@ -3,16 +3,13 @@ mod events;
 pub mod structs;
 mod uwu;
 
-use std::collections::BTreeMap;
-
-use dotenv_parser::parse_dotenv;
-use lazy_static::lazy_static;
 use poise::{
     serenity_prelude::{ChannelId, GatewayIntents, Ready, UserId},
     Framework, FrameworkError,
 };
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use structs::*;
+use std::env;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 
@@ -20,20 +17,12 @@ pub type Context<'a> = poise::Context<'a, Data, Error>;
 
 pub const MOYAI: &str = "🗿";
 
-lazy_static! {
-    pub static ref ENV: BTreeMap<String, String> = {
-        let file = std::fs::read_to_string(".env").unwrap();
-
-        parse_dotenv(&file).unwrap()
-    };
-}
-
 #[macro_export]
 #[allow(clippy::crate_in_macro_def)]
 
 macro_rules! get_env {
     ($u:literal) => {
-        crate::ENV.get($u).expect(&format!("{} not found", $u))
+        &env::var($u).expect(&format!("{} not found", $u))
     };
 }
 
