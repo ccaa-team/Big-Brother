@@ -1,26 +1,35 @@
 {
   description = "Autovirt";
 
-  inputs = {
-    nixpkgs.url = "nixpkgs";
-    flake-utils.url = "github:numtide/flake-utils";
-  };
+  inputs = { nixpkgs.url = "nixpkgs"; };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-    let 
-      pkgs = import nixpkgs {
-        inherit system;
-      };
+  outputs = { self, nixpkgs }:
+    let
+      supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
+      version = "0.1.0";
+      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+      nixpkgsFor = forAllSystems (system: import nixpkgs { inherit system; });
     in {
-    devShell = pkgs.mkShell {
-      DATABASE_URL="postgresql:///autovirt";
-      buildInputs = with pkgs; [
-        pkg-config
-        openssl
-        sqlx-cli
-        cmake
-      ];
+      packages = forAllSystems (system:
+        let
+          pkgs = nixpkgsFor.${system};
+          autovirt = pkgs.rustPlatform.buildRustPackage {
+            pname = "autovirt";
+            inherit version;
+            src = ./.;
+
+            #cargoSha256 = pkgs.lib.fakeSha256;
+            cargoSha256 = "sha256-r7TCEgbiDhRoX/BH+PicAhay36ecy42gEP0ezrYEw90=";
+          };
+          env = builtins.readFile ./.env;
+        in { inherit autovirt;
+        default = pkgs.dockerTools.buildImage {
+          name = "autovirt";
+          contents = [ autovirt pkgs.cacert ];
+          config = {
+            Env = pkgs.lib.splitString "\n" env;
+            Cmd = [ "${autovirt}/bin/autovirt" ];
+          };
+        });
     };
-  });
 }
