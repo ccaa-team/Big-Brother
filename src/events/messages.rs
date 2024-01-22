@@ -8,7 +8,7 @@ use crate::{
 };
 
 pub async fn message(ctx: &Context, data: &Data, msg: &Message) -> Result<(), Error> {
-    if msg.author.bot == true {
+    if msg.author.bot {
         return Ok(());
     }
 
