@@ -46,7 +46,7 @@
         let pkgs = nixpkgsFor.${system};
         in {
           default = pkgs.mkShell {
-            buildInputs = with pkgs; [rust-bin.stable.latest.default];
+            buildInputs = with pkgs; [ rust-bin.stable.latest.default ];
           };
         });
     };

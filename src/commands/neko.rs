@@ -1,5 +1,9 @@
 use nekosbest::Category;
-use poise::command;
+use poise::{
+    command,
+    serenity_prelude::{CreateEmbed, CreateEmbedFooter},
+    CreateReply,
+};
 
 use crate::{Context, Error};
 
@@ -29,33 +33,32 @@ pub async fn neko(
     let category = if CATEGORIES.contains(&category.as_str()) {
         Category::from_url_name(&category).unwrap()
     } else {
-        ctx.send(|m| {
-            m.content(format!(
-                "{} is not a valid category, the available categories are:\n{}",
-                category,
-                CATEGORIES.join(", ")
-            ))
-        })
-        .await?;
+        let m = CreateReply::default().content(format!(
+            "{} is not a valid category, the available categories are:\n{}",
+            category,
+            CATEGORIES.join(", ")
+        ));
+
+        ctx.send(m).await?;
         return Ok(());
     };
 
     let imgs = nekosbest::get_amount(category, amount).await?;
 
     for c in imgs.chunks(10) {
-        ctx.send(|m| {
-            for img in c.iter() {
-                let url = &img.url;
-                let source = match &img.details {
-                    nekosbest::details::Details::Image(d) => d.source_url.as_str(),
-                    nekosbest::details::Details::Gif(d) => &d.anime_name,
-                    _ => todo!(),
-                };
-                m.embed(|e| e.image(url).footer(|f| f.text(source)));
-            }
-            m
-        })
-        .await?;
+        let mut m = CreateReply::default();
+        for img in c.iter() {
+            let url = &img.url;
+            let source = match &img.details {
+                nekosbest::details::Details::Image(d) => d.source_url.as_str(),
+                nekosbest::details::Details::Gif(d) => &d.anime_name,
+                _ => todo!(),
+            };
+            let f = CreateEmbedFooter::new(source);
+            let e = CreateEmbed::new().image(url).footer(f);
+            m = m.embed(e);
+        }
+        ctx.send(m).await?;
     }
 
     Ok(())

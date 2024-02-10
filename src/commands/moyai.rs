@@ -1,6 +1,6 @@
 use std::vec;
 
-use poise::command;
+use poise::{command, serenity_prelude::CreateEmbed, CreateReply};
 use sqlx::query_as;
 
 use crate::{structs::BoardEntry, Context, Error, MOYAI};
@@ -28,21 +28,18 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
         .iter()
         .filter(|p| p.moyai_count >= ctx.data().threshold as i64)
         .collect();
-    ctx.send(|m| {
-        for c in list.chunks(25) {
-            m.embed(|e| {
-                e.fields(c.iter().map(|p| {
-                    (
-                        format!("{}: {} {}", p.author, p.moyai_count, MOYAI),
-                        truncate(&p.message_content, 128),
-                        false,
-                    )
-                }))
-            });
-        }
-        m
-    })
-    .await?;
+
+    for c in list.chunks(25) {
+        let e = CreateEmbed::new().fields(c.iter().map(|p| {
+            (
+                format!("{}: {} {}", p.author, p.moyai_count, MOYAI),
+                truncate(&p.message_content, 128),
+                false,
+            )
+        }));
+        let m = CreateReply::default().embed(e);
+        ctx.send(m).await?;
+    }
 
     Ok(())
 }
@@ -70,7 +67,9 @@ async fn top(ctx: Context<'_>, amount: Option<i64>) -> Result<(), Error> {
             false,
         )
     });
-    ctx.send(|m| m.embed(|e| e.fields(fields))).await?;
+
+    let e = CreateEmbed::new().fields(fields);
+    ctx.send(CreateReply::default().embed(e)).await?;
 
     Ok(())
 }

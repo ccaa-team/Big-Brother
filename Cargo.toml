@@ -10,7 +10,9 @@ chrono = "0.4.30"
 lazy_static = "1.4.0"
 mexprp = { version = "0.3.1", default-features = false }
 nekosbest = "0.20.1"
-poise = "0.5.5"
+phf = "0.11.2"
+poise = "0.6.1"
 rand = "0.8.5"
+regex = "1.10.3"
 sqlx = { version = "0.7.1", features = ["runtime-tokio", "postgres"] }
 tokio = { version = "1.32.0", features = ["full"] }

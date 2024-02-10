@@ -1,4 +1,4 @@
-use poise::command;
+use poise::{command, CreateReply};
 
 use crate::{Context, Error};
 
@@ -10,8 +10,8 @@ pub async fn calc(ctx: Context<'_>, #[rest] expr: String) -> Result<(), Error> {
         Err(e) => e.to_string(),
     };
 
-    ctx.send(|m| m.content(result).reply(true).ephemeral(true))
-        .await?;
+    let m = CreateReply::default().content(result);
+    ctx.send(m).await?;
 
     Ok(())
 }

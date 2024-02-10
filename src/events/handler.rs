@@ -1,4 +1,5 @@
-use poise::{serenity_prelude::Context, Event, FrameworkContext};
+use poise::serenity_prelude::FullEvent as Event;
+use poise::{serenity_prelude::Context, FrameworkContext};
 
 use crate::{Data, Error};
 
@@ -6,7 +7,7 @@ use super::*;
 
 pub async fn handler(
     ctx: &Context,
-    event: &Event<'_>,
+    event: &Event,
     _framework: FrameworkContext<'_, Data, Error>,
     data: &Data,
 ) -> Result<(), Error> {

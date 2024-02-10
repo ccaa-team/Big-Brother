@@ -1,4 +1,4 @@
-use poise::command;
+use poise::{command, CreateReply};
 
 use crate::{Context, Error};
 
@@ -20,7 +20,8 @@ pub async fn uptime(ctx: Context<'_>) -> Result<(), Error> {
         start.timestamp()
     );
 
-    ctx.send(|m| m.content(time).reply(true)).await?;
+    let m = CreateReply::default().content(time);
+    ctx.send(m).await?;
 
     Ok(())
 }

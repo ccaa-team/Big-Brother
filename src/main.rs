@@ -4,12 +4,16 @@ pub mod structs;
 mod uwu;
 
 use poise::{
-    serenity_prelude::{ChannelId, GatewayIntents, Ready, UserId},
-    Framework, FrameworkError,
+    serenity_prelude::{
+        self, CacheHttp, ChannelId, CreateEmbed, CreateMessage,
+        GatewayIntents, Ready, UserId,
+    },
+    CreateReply, Framework, FrameworkError,
 };
+use serenity_prelude as serenity;
 use sqlx::{postgres::PgPoolOptions, PgPool};
+use std::{env};
 use structs::*;
-use std::env;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 
@@ -28,42 +32,32 @@ macro_rules! get_env {
 
 async fn error_handler(err: FrameworkError<'_, Data, Error>) {
     match err {
-        FrameworkError::Command { error, ctx } => {
+        FrameworkError::Command { error, ctx, .. } => {
             // https://tenor.com/view/not-caring-budy-i-am-not-caring-dont-care-gif-22625369
-            let _ = ctx
-                .send(|m| {
-                    // ping me for a slightly higher chance of me noticing
-                    m.content("<@852877128844050432>");
-
-                    m.embed(|e| {
-                        e.title("go yell at virt")
-                            .color(0x2b2d31)
-                            .field("Error", format!("```\n{}\n```", error), false)
-                            .field(
-                                "Command",
-                                format!("```\n{}\n```", ctx.invocation_string()),
-                                false,
-                            )
-                    })
-                })
-                .await;
+            let e = CreateEmbed::new()
+                .title("go yell at virt")
+                .color(0x2b2d31)
+                .field("Error", format!("```rs\n{}\n```", error), false)
+                .field("Command", format!("`{}`", ctx.invocation_string()), false);
+            let m = CreateReply::default()
+                .content("<@852877128844050432>")
+                .embed(e);
+            let _ = ctx.send(m).await;
         }
         FrameworkError::EventHandler {
             error,
             ctx,
             event,
             framework,
+            ..
         } => {
             let channel = &framework.user_data.logs_channel;
 
-            let _ = channel
-                .send_message(ctx, |m| {
-                    m.embed(|e| {
-                        e.field("Event", format!("```\n{:?}\n```", event), false)
-                            .field("Error", error, false)
-                    })
-                })
-                .await;
+            let embed = CreateEmbed::new()
+                .field("Event", format!("```\n{:?}\n```", event), false)
+                .field("Error", error.to_string(), false);
+            let message = CreateMessage::new().embed(embed);
+            let _ = channel.send_message(ctx, message).await;
         }
         _ => (),
     }
@@ -77,7 +71,12 @@ async fn setup(
 ) -> Result<Data, Error> {
     poise::builtins::register_globally(ctx, &frm.options().commands).await?;
 
-    let bot_pfp = ready.user.avatar_url();
+    let user = ctx.http().get_current_user().await?;
+    //let avatar = CreateAttachment::path("./pfp.gif").await?;
+    //user.edit(ctx.http(), EditProfile::new().avatar(&avatar))
+    //    .await?;
+
+    let bot_pfp = user.avatar_url();
 
     let bot = ready.user.clone();
 
@@ -137,8 +136,6 @@ async fn main() -> Result<(), Error> {
         | GatewayIntents::GUILD_MESSAGE_REACTIONS;
 
     let framework = poise::Framework::builder()
-        .token(token)
-        .intents(intents)
         .setup(|ctx, ready, frm| Box::pin(async move { setup(ctx, ready, frm, db).await }))
         .options(poise::FrameworkOptions {
             commands,
@@ -148,16 +145,21 @@ async fn main() -> Result<(), Error> {
             },
             prefix_options: poise::PrefixFrameworkOptions {
                 prefix: Some(";".into()),
-                edit_tracker: Some(poise::EditTracker::for_timespan(
-                    std::time::Duration::from_secs(60 * 60),
-                )),
+                edit_tracker: Some(
+                    poise::EditTracker::for_timespan(std::time::Duration::from_secs(60 * 60))
+                        .into(),
+                ),
                 case_insensitive_commands: true,
                 ..Default::default()
             },
             ..Default::default()
-        });
+        })
+        .build();
 
-    framework.run().await.unwrap();
+    let client = serenity::ClientBuilder::new(token, intents)
+        .framework(framework)
+        .await;
+    client.unwrap().start().await.unwrap();
 
     Ok(())
 }

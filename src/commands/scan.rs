@@ -1,4 +1,8 @@
-use poise::command;
+use poise::{
+    command,
+    serenity_prelude::{CreateAllowedMentions, GetMessages},
+    CreateReply,
+};
 use sqlx::{query, query_as};
 
 use crate::{
@@ -13,7 +17,8 @@ async fn viwty(ctx: Context<'_>) -> Result<bool, Error> {
 
 #[command(prefix_command, check = "viwty", guild_only)]
 pub async fn scan(ctx: Context<'_>) -> Result<(), Error> {
-    ctx.send(|m| m.content("Scanning")).await?;
+    ctx.send(CreateReply::default().content("Scanning")).await?;
+
     query!("delete from moyai *")
         .execute(&ctx.data().db)
         .await?;
@@ -26,15 +31,11 @@ pub async fn scan(ctx: Context<'_>) -> Result<(), Error> {
         let mut total = vec![];
         let mut id = None;
         loop {
-            let list = channel
-                .messages(ctx, |l| {
-                    l.limit(100);
-                    if let Some(id) = id {
-                        l.before(id);
-                    }
-                    l
-                })
-                .await;
+            let mut builder = GetMessages::new().limit(100);
+            if let Some(id) = id {
+                builder = builder.before(id);
+            }
+            let list = channel.messages(ctx, builder).await;
             let mut list = match list {
                 Ok(l) => l,
                 Err(_) => break,
@@ -72,12 +73,11 @@ pub async fn scan(ctx: Context<'_>) -> Result<(), Error> {
         }
     }
 
-    ctx.send(|m| {
-        m.content("Done.")
-            .reply(true)
-            .allowed_mentions(|m| m.replied_user(true))
-    })
-    .await?;
+    let m = CreateReply::default()
+        .content("Done")
+        .allowed_mentions(CreateAllowedMentions::new().replied_user(true));
+
+    ctx.send(m).await?;
 
     Ok(())
 }

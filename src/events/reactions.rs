@@ -1,4 +1,7 @@
-use poise::serenity_prelude::{Context, Message, MessageId, MessageReaction, Reaction};
+use poise::serenity_prelude::{
+    Context, CreateEmbed, CreateEmbedAuthor, CreateMessage, EditMessage,
+    Message, MessageId, MessageReaction, Reaction,
+};
 use sqlx::{query, query_as};
 
 use crate::{structs::BoardEntry, Data, Error, MOYAI};
@@ -9,20 +12,19 @@ async fn create_post(
     count: &i64,
     msg: &Message,
 ) -> Result<MessageId, Error> {
-    let msg = data
-        .cursed_channel
-        .send_message(ctx, |m| {
-            m.content(&format!("{} {}", *count, MOYAI)).embed(|e| {
-                e.author(|a| a.name(&msg.author.name).icon_url(msg.author.face()));
-                if let Some(attachment) = msg.attachments.first() {
-                    e.image(&attachment.url);
-                };
-                e.description(&msg.content)
-                    .field("Source", format!("[jump]({})", msg.link()), false)
-                    .color(0xAC00BB)
-            })
-        })
-        .await?;
+    let author = CreateEmbedAuthor::new(&msg.author.name).icon_url(msg.author.face());
+    let mut embed = CreateEmbed::new()
+        .author(author)
+        .description(&msg.content)
+        .field("Source", format!("[jump]({})", msg.link()), false)
+        .color(0xAC00BB);
+    if let Some(attachment) = msg.attachments.first() {
+        embed = embed.image(&attachment.url);
+    }
+    let message = CreateMessage::new()
+        .content(format!("{} {}", *count, MOYAI))
+        .embed(embed);
+    let msg = data.cursed_channel.send_message(ctx, message).await?;
     Ok(msg.id)
 }
 
@@ -58,8 +60,11 @@ pub async fn update_entry(
     } else if post.post_id.is_some() {
         let post_id: u64 = post.post_id.clone().unwrap().parse().unwrap();
         let mut msg = data.cursed_channel.message(ctx, post_id).await?;
-        msg.edit(ctx, |m| m.content(format!("{} {}", count, MOYAI)))
-            .await?;
+        msg.edit(
+            ctx,
+            EditMessage::new().content(format!("{} {}", count, MOYAI)),
+        )
+        .await?;
     }
 
     Ok(())
@@ -181,8 +186,11 @@ pub async fn reaction_remove(ctx: &Context, data: &Data, reaction: &Reaction) ->
                 .execute(&data.db)
                 .await?;
                 let mut msg = data.cursed_channel.message(ctx, post_id).await?;
-                msg.edit(ctx, |m| m.content(format!("{} {}", count, MOYAI)))
-                    .await?;
+                msg.edit(
+                    ctx,
+                    EditMessage::new().content(format!("{} {}", count, MOYAI)),
+                )
+                .await?;
             }
         } else {
             post.delete(ctx).await?;

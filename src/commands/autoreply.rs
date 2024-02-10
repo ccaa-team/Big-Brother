@@ -1,4 +1,8 @@
-use poise::command;
+use poise::{
+    command,
+    serenity_prelude::{CreateEmbed, CreateEmbedAuthor},
+    CreateReply,
+};
 use sqlx::{query, query_as};
 
 use crate::{structs::AutoReply, Context, Error};
@@ -21,15 +25,14 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
         .reduce(|a, b| format!("{}\n{}", a, b))
         .unwrap_or_else(|| "No autoreply rules found.".to_string());
 
-    ctx.send(|m| {
-        m.embed(|e| {
-            if let Some(pfp) = &ctx.data().bot_pfp {
-                e.author(|a| a.icon_url(pfp));
-            }
-            e.title("AutoReply Rules").description(list)
-        })
-    })
-    .await?;
+    let mut e = CreateEmbed::new()
+        .title("AutoReply rules")
+        .description(list);
+    if let Some(pfp) = &ctx.data().bot_pfp {
+        e = e.author(CreateEmbedAuthor::new("").icon_url(pfp));
+    }
+    let m = CreateReply::default().embed(e);
+    ctx.send(m).await?;
 
     Ok(())
 }
@@ -46,16 +49,16 @@ async fn add(ctx: Context<'_>, trigger: String, #[rest] reply: String) -> Result
     .execute(&ctx.data().db)
     .await;
 
-    ctx.send(|m| {
-        m.content(match result {
+    let m = CreateReply::default()
+        .content(match result {
             Ok(_) => format!("Added rule `{}`", trigger),
             Err(e) => {
                 format!("Failed to add rule: ```rs\n{}\n```", e)
             }
         })
-        .ephemeral(true)
-    })
-    .await?;
+        .ephemeral(true);
+
+    ctx.send(m).await?;
 
     Ok(())
 }
@@ -71,15 +74,15 @@ async fn remove(ctx: Context<'_>, trigger: String) -> Result<(), Error> {
     .execute(&ctx.data().db)
     .await?;
 
-    ctx.send(|m| {
-        m.content(if result.rows_affected() == 0 {
+    let m = CreateReply::default()
+        .content(if result.rows_affected() == 0 {
             "Failed to remove a rule, does it exist?".to_string()
         } else {
             format!("Removed rule `{}`", trigger)
         })
-        .ephemeral(true)
-    })
-    .await?;
+        .ephemeral(true);
+
+    ctx.send(m).await?;
 
     Ok(())
 }
