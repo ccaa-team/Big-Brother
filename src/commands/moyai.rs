@@ -5,7 +5,7 @@ use sqlx::query_as;
 
 use crate::{structs::BoardEntry, Context, Error, MOYAI};
 
-#[command(slash_command, subcommands("list", "top"))]
+#[command(slash_command, subcommands("list", "top"), subcommand_required)]
 pub async fn moyai(_ctx: Context<'_>) -> Result<(), Error> {
     unreachable!();
 }

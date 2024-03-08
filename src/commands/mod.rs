@@ -7,4 +7,5 @@ macro_rules! cmd {
     };
 }
 
-cmd!(autoreply, calc, moyai, neko, scan, uptime, uwu, nerd);
+cmd!(autoreply, calc, neko, uptime, uwu, nerd);
+//cmd!(autoreply, calc, moyai, neko, scan, uptime, uwu, nerd);
