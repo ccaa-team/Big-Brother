@@ -14,7 +14,7 @@ pub async fn message(ctx: &Context, data: &Data, msg: &Message) -> Result<(), Er
         out += "*pees in your ass*";
     }
 
-    let replies = data.autoreplies.lock().await;
+    let replies = data.autoreplies.read().await;
     let content = replies
         .iter()
         .filter(|r| msg.content.contains(&r.trigger))

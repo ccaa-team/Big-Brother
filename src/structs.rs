@@ -1,9 +1,11 @@
+
+
 use sqlx::PgPool;
-use tokio::sync::Mutex;
 
 use chrono::{DateTime, Local};
 
 use poise::serenity_prelude::{ChannelId, CurrentUser, PrivateChannel};
+use tokio::sync::RwLock;
 
 pub struct Data {
     pub bot_pfp: Option<String>,
@@ -13,7 +15,7 @@ pub struct Data {
     pub db: PgPool,
     pub startup: DateTime<Local>,
     pub threshold: u64,
-    pub autoreplies: Mutex<Vec<AutoReply>>,
+    pub autoreplies: RwLock<Vec<AutoReply>>,
 }
 
 pub struct BoardEntry {

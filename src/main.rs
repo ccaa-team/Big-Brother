@@ -11,9 +11,9 @@ use poise::{
 };
 use serenity_prelude as serenity;
 use sqlx::{postgres::PgPoolOptions, query_as, PgPool};
-use std::env;
+use std::{env};
 use structs::*;
-use tokio::sync::Mutex;
+use tokio::sync::{RwLock};
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 
@@ -108,7 +108,7 @@ async fn setup(
         threshold,
         db,
         startup,
-        autoreplies: Mutex::new(autoreplies),
+        autoreplies: RwLock::new(autoreplies),
     })
 }
 
