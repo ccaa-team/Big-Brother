@@ -11,11 +11,7 @@ use crate::{
     Context, Error, MOYAI,
 };
 
-async fn viwty(ctx: Context<'_>) -> Result<bool, Error> {
-    Ok(ctx.author().id == 852877128844050432)
-}
-
-#[command(prefix_command, check = "viwty", guild_only)]
+#[command(prefix_command, owners_only, guild_only)]
 pub async fn scan(ctx: Context<'_>) -> Result<(), Error> {
     ctx.send(CreateReply::default().content("Scanning")).await?;
 

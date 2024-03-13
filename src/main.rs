@@ -5,15 +5,15 @@ mod uwu;
 
 use poise::{
     serenity_prelude::{
-        self, CacheHttp, ChannelId, CreateEmbed, CreateMessage,
-        GatewayIntents, Ready, UserId,
+        self, CacheHttp, ChannelId, CreateEmbed, CreateMessage, GatewayIntents, Ready, UserId,
     },
     CreateReply, Framework, FrameworkError,
 };
 use serenity_prelude as serenity;
-use sqlx::{postgres::PgPoolOptions, PgPool};
-use std::{env};
+use sqlx::{postgres::PgPoolOptions, query_as, PgPool};
+use std::env;
 use structs::*;
+use tokio::sync::Mutex;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 
@@ -96,6 +96,10 @@ async fn setup(
 
     let startup = chrono::Local::now();
 
+    let autoreplies: Vec<AutoReply> = query_as!(AutoReply, "select * from replies")
+        .fetch_all(&db)
+        .await?;
+
     Ok(Data {
         bot_pfp,
         bot,
@@ -104,6 +108,7 @@ async fn setup(
         threshold,
         db,
         startup,
+        autoreplies: Mutex::new(autoreplies),
     })
 }
 
@@ -122,13 +127,13 @@ async fn main() -> Result<(), Error> {
 
     let commands = vec![
         uwu(),
-        moyai(),
         autoreply(),
-        scan(),
         calc(),
         uptime(),
         neko(),
         nerd(),
+        moyai(),
+        scan(),
     ];
 
     let intents = GatewayIntents::GUILD_MESSAGES
