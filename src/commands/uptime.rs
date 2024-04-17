@@ -9,7 +9,7 @@ pub async fn interaction(
     _data: &CommandData,
     ctx: &Context,
 ) -> anyhow::Result<InteractionResponseData> {
-    let elapsed = ctx.data.read().await.start.elapsed();
+    let elapsed = ctx.start.elapsed();
     let uptime_str = format!(
         "Uptime: {}d {}h {}m {}s {}ms {}micros {}ns",
         elapsed.as_secs() / 3600 / 24,

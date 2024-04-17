@@ -9,8 +9,6 @@ use twilight_model::id::{marker::ApplicationMarker, Id};
 pub struct Data {
     pub db: PgPool,
     pub rules: Vec<Rule>,
-    pub start: Instant,
-    pub pfp: String,
 }
 
 #[derive(Clone)]
@@ -18,6 +16,8 @@ pub struct ContextRef {
     pub app_id: Id<ApplicationMarker>,
     pub http: Arc<HttpClient>,
     pub data: Arc<RwLock<Data>>,
+    pub start: Instant,
+    pub pfp: String,
 }
 
 impl ContextRef {
@@ -31,15 +31,9 @@ impl ContextRef {
         Self {
             http,
             app_id,
-            data: Arc::new(
-                Data {
-                    db,
-                    rules,
-                    pfp,
-                    start: Instant::now(),
-                }
-                .into(),
-            ),
+            data: Arc::new(Data { db, rules }.into()),
+            pfp,
+            start: Instant::now(),
         }
     }
 

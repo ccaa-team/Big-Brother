@@ -14,7 +14,7 @@ pub struct Rule {
 impl sqlx::FromRow<'_, PgRow> for Rule {
     fn from_row(row: &PgRow) -> Result<Self, sqlx::Error> {
         Ok(Self {
-            trigger: row.try_get("message")?,
+            trigger: row.try_get("trigger")?,
             reply: row.try_get("reply")?,
             guild: row.try_get::<String, _>("guild")?.as_str().parse().unwrap(),
         })

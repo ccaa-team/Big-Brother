@@ -1,18 +1,19 @@
 use core::str;
-use std::{hash::Hash, sync::Arc};
+use std::{panic::set_hook, sync::Arc};
 
 use crate::{
     structs::{BoardEntry, Settings},
     Context,
 };
-use sqlx::{query, query_as, FromRow, PgPool};
+use sqlx::{query_as, PgPool};
 use tracing::info;
 use twilight_http::{
-    request::channel::reaction::RequestReactionType::Unicode, Client as HttpClient,
+    request::channel::{self, reaction::RequestReactionType::Unicode},
+    Client as HttpClient,
 };
 use twilight_model::{
     channel::{message::ReactionType, Message},
-    gateway::payload::incoming::{ReactionAdd, ReactionRemove, ReactionRemoveEmoji},
+    gateway::payload::incoming::{ReactionAdd, ReactionRemove},
     id::{
         marker::{ChannelMarker, GuildMarker, MessageMarker, UserMarker},
         Id,
@@ -21,7 +22,7 @@ use twilight_model::{
 use twilight_util::builder::embed::{
     EmbedAuthorBuilder, EmbedBuilder, EmbedFieldBuilder, ImageSource,
 };
-const MOYAI: &'static str = "🗿";
+const MOYAI: &str = "🗿";
 
 pub async fn reaction_count(
     channel_id: Id<ChannelMarker>,
@@ -40,14 +41,14 @@ pub async fn reaction_count(
         tmp.await
     } {
         let models = reactions.models().await?;
-        if models.len() == 0 {
+        if models.is_empty() {
             break;
         }
         after = Some(
             models
                 .last()
                 .map(|u| u.id)
-                .or_else(|| after)
+                .or(after)
                 .expect("it not to fail"),
         );
         out += models.iter().filter(|u| !u.bot && u.id != author).count();
@@ -92,13 +93,11 @@ async fn reactions_changed(
         } else {
             delete_post(entry, &settings, db, ctx).await
         }
+    } else if count >= settings.board_threshold.into() {
+        let message = ctx.http.message(channel, msg).await?.model().await?;
+        create_post(message, guild, count, &settings, db, ctx).await
     } else {
-        if count >= settings.board_threshold.into() {
-            let message = ctx.http.message(channel, msg).await?.model().await?;
-            create_post(message, guild, count, &settings, db, ctx).await
-        } else {
-            return Ok(());
-        }
+        Ok(())
     }
 }
 
@@ -113,7 +112,7 @@ async fn delete_post(
         "delete from board where post_id = $1",
         entry.post_id.to_string()
     )
-    .fetch_all(db)
+    .execute(db)
     .await?;
 
     ctx.http
@@ -132,14 +131,19 @@ async fn create_post(
     ctx: &Context,
 ) -> anyhow::Result<()> {
     let pfp = {
-        let avatar = msg.author.avatar.unwrap();
-        let ext = if avatar.is_animated() { "gif" } else { "png" };
-        ImageSource::url(format!(
-            "https://cdn.discordapp.com/{}/{}.{}",
-            msg.author.id, avatar, ext
-        ))?
+        let avatar = msg.author.avatar;
+        if let Some(ava) = avatar {
+            let ext = if ava.is_animated() { "gif" } else { "png" };
+            ImageSource::url(format!(
+                "https://cdn.discordapp.com/avatars/{}/{}.{}",
+                msg.author.id, ava, ext
+            ))
+        } else {
+            ImageSource::url(&ctx.pfp)
+        }?
     };
     let mut embed = EmbedBuilder::new()
+        .color(crate::EMBED_COLOR)
         .author(EmbedAuthorBuilder::new(msg.author.name).icon_url(pfp))
         .description(&msg.content)
         .field(EmbedFieldBuilder::new(
@@ -149,13 +153,14 @@ async fn create_post(
                 guild, msg.channel_id, msg.id
             ),
         ));
-    if let Some(attachment) = msg.attachments.get(0) {
+    if let Some(attachment) = msg.attachments.first() {
         embed = embed.image(ImageSource::url(&attachment.url)?);
     };
 
     let post = match ctx
         .http
         .create_message(settings.board_channel.expect("We know the channel is set"))
+        .content(&format!("{count} {MOYAI}"))?
         .embeds(&[embed.build()])?
         .await
     {
@@ -186,6 +191,19 @@ async fn update_post(
     db: &sqlx::Pool<sqlx::Postgres>,
     ctx: &Context,
 ) -> anyhow::Result<()> {
+    let channel = settings.board_channel.unwrap();
+    ctx.http
+        .update_message(channel, entry.post_id)
+        .content(Some(&format!("{count} {MOYAI}")))?
+        .await?;
+
+    sqlx::query!(
+        "update board set stars = $1 where message_id = $2",
+        count,
+        entry.message_id.to_string(),
+    )
+    .execute(db)
+    .await?;
     Ok(())
 }
 

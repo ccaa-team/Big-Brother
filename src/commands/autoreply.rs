@@ -80,16 +80,28 @@ async fn remove(trigger: String, ctx: &Context) -> anyhow::Result<String> {
 
     Ok(format!("Removed rule `{trigger}`"))
 }
+fn truncate(s: &String) -> String {
+    let mut s = s.to_owned();
+    if s.chars().count() > 64 {
+        // if this fails i'm killing myself
+        let char = s.char_indices().nth(63).unwrap();
+        s.truncate(char.0);
+    }
+    s
+}
 async fn list(guild: Id<GuildMarker>, ctx: &Context) -> anyhow::Result<String> {
     let mut out = String::new();
 
-    let rules = ctx
-        .data
-        .read()
-        .await
-        .rules
-        .iter()
-        .filter(|r| r.guild == guild);
+    let data = ctx.data.read().await;
+    let rules = data.rules.iter().filter(|r| r.guild == guild);
+
+    rules.for_each(|r| {
+        out += &format!(
+            "\n- {}\n- - {}",
+            r.trigger,
+            truncate(&r.reply).replace("\n", "- - ")
+        )
+    });
 
     Ok(out)
 }

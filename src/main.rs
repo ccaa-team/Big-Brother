@@ -17,8 +17,9 @@ use twilight_model::id::{
     Id,
 };
 
-const OWNER_ID: Id<UserMarker> = Id::new(852877128844050432);
-const TEST_GUILD: Id<GuildMarker> = Id::new(1089645999787610287);
+pub const OWNER_ID: Id<UserMarker> = Id::new(852877128844050432);
+pub const TEST_GUILD: Id<GuildMarker> = Id::new(1089645999787610287);
+pub const EMBED_COLOR: u32 = 0x7e68d0;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -46,6 +47,7 @@ async fn main() -> anyhow::Result<()> {
     let avatar = user.avatar.unwrap();
     let ext = if avatar.is_animated() { "gif" } else { "png" };
     let pfp = format!("https://cdn.discordapp.com/{}/{}.{}", user.id, avatar, ext);
+
     let ctx = Context::new(app.id, http, db, pfp, rules);
 
     ctx.interaction()
