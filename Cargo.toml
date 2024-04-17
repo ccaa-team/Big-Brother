@@ -6,13 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = "0.4.30"
-lazy_static = "1.4.0"
-mexprp = { version = "0.3.1", default-features = false }
-nekosbest = "0.20.1"
-phf = "0.11.2"
-poise = "0.6.1"
-rand = "0.8.5"
-regex = "1.10.3"
-sqlx = { version = "0.7.1", features = ["runtime-tokio", "postgres"] }
-tokio = { version = "1.32.0", features = ["macros", "rt"] }
+anyhow = "1.0.81"
+serde = "1.0.197"
+sqlx = { version = "0.7.1", features = ["runtime-tokio", "postgres", "bigdecimal"] }
+tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
+twilight-gateway = { version = "0.15.4", features = ["simd-json"] }
+twilight-http = { version = "0.15.4", features = ["simd-json"] }
+twilight-model = "0.15.4"
+twilight-util = { version = "0.15.4", features = ["builder"] }

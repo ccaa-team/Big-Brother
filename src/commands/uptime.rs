@@ -1,27 +1,27 @@
-use poise::{command, CreateReply};
+use crate::context::Context;
+use twilight_model::{
+    application::interaction::application_command::CommandData,
+    http::interaction::InteractionResponseData,
+};
+use twilight_util::builder::InteractionResponseDataBuilder;
 
-use crate::{Context, Error};
-
-#[command(slash_command, prefix_command)]
-/// Show the bot's uptime
-pub async fn uptime(ctx: Context<'_>) -> Result<(), Error> {
-    // good luck fucking with the clock
-    let now = chrono::Local::now();
-    let start = &ctx.data().startup;
-    let time = now.signed_duration_since(start);
-
-    let time = format!(
-        "Uptime: `{}d {}h {}m {}s {}ms` (started <t:{}>)",
-        time.num_days(),
-        time.num_hours() % 24,
-        time.num_minutes() % 60,
-        time.num_seconds() % 60,
-        time.num_milliseconds() % 1000,
-        start.timestamp()
+pub async fn interaction(
+    _data: &CommandData,
+    ctx: &Context,
+) -> anyhow::Result<InteractionResponseData> {
+    let elapsed = ctx.data.read().await.start.elapsed();
+    let uptime_str = format!(
+        "Uptime: {}d {}h {}m {}s {}ms {}micros {}ns",
+        elapsed.as_secs() / 3600 / 24,
+        (elapsed.as_secs() / 3600) % 24,
+        elapsed.as_secs() / 60,
+        elapsed.as_secs() % 60,
+        elapsed.as_millis() % 1000,
+        elapsed.as_micros() % 1000,
+        elapsed.as_nanos() % 1000,
     );
 
-    let m = CreateReply::default().content(time);
-    ctx.send(m).await?;
-
-    Ok(())
+    Ok(InteractionResponseDataBuilder::new()
+        .content(uptime_str)
+        .build())
 }

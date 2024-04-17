@@ -1,10 +1,6 @@
-macro_rules! cmd {
-    ($($u:tt), *) => {
-        $(
-            mod $u;
-            pub use $u::$u;
-        )*
-    };
-}
+pub mod autoreply;
+pub mod average;
+pub mod handler;
+pub mod uptime;
 
-cmd!(autoreply, calc, moyai, neko, scan, uptime, uwu, nerd);
+pub use handler::*;

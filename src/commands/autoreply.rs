@@ -1,103 +1,139 @@
-use crate::{structs::AutoReply, Context, Error};
-use poise::{
-    command,
-    serenity_prelude::{CreateEmbed, CreateEmbedAuthor},
-    CreateReply,
+use std::collections::VecDeque;
+
+use crate::{context::Context, structs::Rule};
+use sqlx::query;
+use twilight_model::{
+    application::interaction::application_command::{
+        CommandData, CommandDataOption, CommandOptionValue,
+    },
+    channel::message::MessageFlags,
+    http::interaction::InteractionResponseData,
+    id::{marker::GuildMarker, Id},
 };
-use sqlx::{query, query_as};
+use twilight_util::builder::InteractionResponseDataBuilder;
 
-#[command(slash_command, subcommands("list", "add", "remove"))]
-pub async fn autoreply(_ctx: Context<'_>) -> Result<(), Error> {
-    unreachable!();
-}
-
-#[command(slash_command, prefix_command)]
-/// List all the autoreply rules
-async fn list(ctx: Context<'_>) -> Result<(), Error> {
-    let replies = ctx.data().autoreplies.read().await;
-    let list = replies
+async fn add(
+    trigger: String,
+    reply: String,
+    guild: Id<GuildMarker>,
+    ctx: &Context,
+) -> anyhow::Result<String> {
+    if ctx
+        .data
+        .read()
+        .await
+        .rules
         .iter()
-        .map(|r| format!("* {}\n  * {}", &r.trigger, &r.reply))
-        .reduce(|a, b| format!("{}\n{}", a, b))
-        .unwrap_or_else(|| "No autoreply rules found.".to_string());
-    drop(replies);
+        .any(|r| r.trigger == trigger)
+    {
+        return Ok("Rule already exists, delete it if you want to replace it.".to_owned());
+    };
 
-    let mut e = CreateEmbed::new()
-        .title("AutoReply rules")
-        .description(list);
-    if let Some(pfp) = &ctx.data().bot_pfp {
-        e = e.author(CreateEmbedAuthor::new("").icon_url(pfp));
-    }
-    let m = CreateReply::default().embed(e);
-    ctx.send(m).await?;
-
-    Ok(())
-}
-
-#[command(
-    slash_command,
-    prefix_command,
-    required_permissions = "MANAGE_MESSAGES"
-)]
-/// Add an autoreply rule
-async fn add(ctx: Context<'_>, trigger: String, #[rest] reply: String) -> Result<(), Error> {
-    let result = query!(
-        "insert into replies
-        values($1, $2)",
+    query!(
+        "insert into rules values ($1, $2, $3)",
         trigger,
-        reply
+        reply,
+        guild.to_string()
     )
-    .execute(&ctx.data().db)
-    .await;
-
-    let m = CreateReply::default()
-        .content(match result {
-            Ok(_) => {
-                let out = format!("Added rule `{}`", &trigger);
-                let mut list = ctx.data().autoreplies.write().await;
-                list.push(AutoReply { trigger, reply });
-                out
-            }
-            Err(e) => {
-                format!("Failed to add rule: ```rs\n{}\n```", e)
-            }
-        })
-        .ephemeral(true);
-
-    ctx.send(m).await?;
-
-    Ok(())
-}
-
-#[command(
-    slash_command,
-    prefix_command,
-    required_permissions = "MANAGE_MESSAGES"
-)]
-/// Remove an autoreply rule
-async fn remove(ctx: Context<'_>, trigger: String) -> Result<(), Error> {
-    let result = query!(
-        "delete from replies
-        where trigger = $1",
-        trigger
-    )
-    .execute(&ctx.data().db)
+    .execute(&ctx.data.read().await.db)
     .await?;
 
-    let m = CreateReply::default()
-        .content(if result.rows_affected() == 0 {
-            "Failed to remove a rule, does it exist?".to_string()
-        } else {
-            // just fetch that shit, it's not worth it
-            let data: Vec<AutoReply> = query_as!(AutoReply, "select * from replies")
-                .fetch_all(&ctx.data().db)
-                .await?;
-            *ctx.data().autoreplies.write().await = data;
-            format!("Removed rule `{}`", trigger)
+    let out = format!("Added rule `{}`!", trigger);
+
+    ctx.data.write().await.rules.push(Rule {
+        trigger,
+        reply,
+        guild,
+    });
+
+    Ok(out)
+}
+async fn remove(trigger: String, ctx: &Context) -> anyhow::Result<String> {
+    if !ctx
+        .data
+        .read()
+        .await
+        .rules
+        .iter()
+        .any(|r| r.trigger == trigger)
+    {
+        return Ok("The rule you're trying to remove doesn't exist.".to_owned());
+    };
+
+    query!("delete from rules where trigger = $1", trigger)
+        .execute(&ctx.data.read().await.db)
+        .await?
+        .rows_affected();
+
+    let mut data = ctx.data.write().await;
+    data.rules = data
+        .rules
+        .iter()
+        .filter_map(|r| {
+            if r.trigger != trigger {
+                Some(r.clone())
+            } else {
+                None
+            }
         })
-        .ephemeral(true);
+        .collect();
 
-    ctx.send(m).await?;
+    Ok(format!("Removed rule `{trigger}`"))
+}
+async fn list(guild: Id<GuildMarker>, ctx: &Context) -> anyhow::Result<String> {
+    let mut out = String::new();
 
-    Ok(())
+    let rules = ctx
+        .data
+        .read()
+        .await
+        .rules
+        .iter()
+        .filter(|r| r.guild == guild);
+
+    Ok(out)
+}
+pub async fn interaction(
+    cmd: &CommandData,
+    ctx: &Context,
+) -> anyhow::Result<InteractionResponseData> {
+    let get_str = |o: CommandDataOption| -> String {
+        if let CommandOptionValue::String(s) = o.value {
+            s
+        } else {
+            unreachable!()
+        }
+    };
+    // This is a subcommand, it'll always be here
+    let subcommand = &cmd.options[0];
+    let mut args: VecDeque<_> = match &subcommand.value {
+        CommandOptionValue::SubCommand(c) => c.clone(),
+        _ => unreachable!(),
+    }
+    .into();
+    let (trigger, reply) = (args.pop_front().map(get_str), args.pop_front().map(get_str));
+
+    Ok(InteractionResponseDataBuilder::new()
+        .content(match subcommand.name.as_str() {
+            "add" => {
+                add(
+                    trigger.unwrap(),
+                    reply.unwrap(),
+                    cmd.guild_id.expect("this is only going to run in a guild"),
+                    ctx,
+                )
+                .await
+            }
+            "remove" => remove(trigger.unwrap(), ctx).await,
+            "list" => {
+                list(
+                    cmd.guild_id.expect("this is only going to run in a guild"),
+                    ctx,
+                )
+                .await
+            }
+            _ => unreachable!(),
+        }?)
+        .flags(MessageFlags::EPHEMERAL)
+        .build())
 }
