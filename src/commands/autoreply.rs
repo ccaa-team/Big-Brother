@@ -29,14 +29,12 @@ async fn add(
         return Ok("Rule already exists, delete it if you want to replace it.".to_owned());
     };
 
-    query!(
-        "insert into rules values ($1, $2, $3)",
-        trigger,
-        reply,
-        guild.to_string()
-    )
-    .execute(&ctx.db)
-    .await?;
+    query("insert into rules values ($1, $2, $3)")
+        .bind(&trigger)
+        .bind(&reply)
+        .bind(guild.to_string())
+        .execute(&ctx.db)
+        .await?;
 
     let out = format!("Added rule `{}`!", trigger);
 
@@ -60,7 +58,8 @@ async fn remove(trigger: String, ctx: &Context) -> anyhow::Result<String> {
         return Ok("The rule you're trying to remove doesn't exist.".to_owned());
     };
 
-    query!("delete from rules where trigger = $1", trigger)
+    query("delete from rules where trigger = $1")
+        .bind(&trigger)
         .execute(&ctx.db)
         .await?
         .rows_affected();

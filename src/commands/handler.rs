@@ -1,13 +1,11 @@
-use crate::{
-    commands::{autoreply, average, uptime},
-};
+use crate::commands::{autoreply, average, uptime};
 
-use sqlx::{Row};
+use sqlx::Row;
 
 use twilight_model::{
     application::{
         command::{Command, CommandType},
-        interaction::{InteractionData},
+        interaction::InteractionData,
     },
     channel::message::AllowedMentions,
     gateway::payload::incoming::InteractionCreate,
@@ -15,10 +13,7 @@ use twilight_model::{
         InteractionResponse, InteractionResponseData,
         InteractionResponseType::ChannelMessageWithSource,
     },
-    id::{
-        marker::{GuildMarker},
-        Id,
-    },
+    id::{marker::GuildMarker, Id},
 };
 use twilight_util::builder::{
     command::{CommandBuilder, StringBuilder, SubCommandBuilder},

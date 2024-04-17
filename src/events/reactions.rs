@@ -107,12 +107,10 @@ async fn delete_post(
     ctx: &Context,
 ) -> anyhow::Result<()> {
     let board_channel = settings.board_channel.unwrap();
-    sqlx::query!(
-        "delete from board where post_id = $1",
-        entry.post_id.to_string()
-    )
-    .execute(db)
-    .await?;
+    sqlx::query("delete from board where post_id = $1")
+        .bind(entry.post_id.to_string())
+        .execute(db)
+        .await?;
 
     ctx.http
         .delete_message(board_channel, entry.post_id)
@@ -196,13 +194,11 @@ async fn update_post(
         .content(Some(&format!("{count} {MOYAI}")))?
         .await?;
 
-    sqlx::query!(
-        "update board set stars = $1 where message_id = $2",
-        count,
-        entry.message_id.to_string(),
-    )
-    .execute(db)
-    .await?;
+    sqlx::query("update board set stars = $1 where message_id = $2")
+        .bind(count)
+        .bind(entry.message_id.to_string())
+        .execute(db)
+        .await?;
     Ok(())
 }
 
