@@ -25,7 +25,6 @@ impl sqlx::FromRow<'_, PgRow> for Rule {
 pub struct BoardEntry {
     pub message: String,
     pub guild_id: Id<GuildMarker>,
-    pub channel_id: Id<ChannelMarker>,
     pub message_id: Id<MessageMarker>,
     pub post_id: Id<MessageMarker>,
     pub stars: i32,
@@ -37,11 +36,6 @@ impl sqlx::FromRow<'_, PgRow> for BoardEntry {
             message: row.try_get("message").unwrap(),
             guild_id: row
                 .try_get::<String, _>("guild_id")?
-                .as_str()
-                .parse()
-                .unwrap(),
-            channel_id: row
-                .try_get::<String, _>("channel_id")?
                 .as_str()
                 .parse()
                 .unwrap(),
@@ -72,13 +66,8 @@ impl sqlx::FromRow<'_, PgRow> for Settings {
         // These unwraps aren't gonna fail unless the DB fails on us (or someone finds a way to
         // inject squeel)
         Ok(Self {
-            guild: row
-                .try_get::<String, _>("guild")
-                .expect("not null, db dead")
-                .as_str()
-                .parse()
-                .unwrap(),
-            board_threshold: row.try_get("board_threshold").unwrap(),
+            guild: row.try_get::<String, _>("guild")?.as_str().parse().unwrap(),
+            board_threshold: row.try_get("board_threshold")?,
             board_channel: row
                 .try_get("board_channel")
                 .ok()

@@ -7,7 +7,6 @@ use twilight_http::Client as HttpClient;
 use twilight_model::id::{marker::ApplicationMarker, Id};
 
 pub struct Data {
-    pub db: PgPool,
     pub rules: Vec<Rule>,
 }
 
@@ -17,6 +16,7 @@ pub struct ContextRef {
     pub http: Arc<HttpClient>,
     pub data: Arc<RwLock<Data>>,
     pub start: Instant,
+    pub db: PgPool,
     pub pfp: String,
 }
 
@@ -31,7 +31,8 @@ impl ContextRef {
         Self {
             http,
             app_id,
-            data: Arc::new(Data { db, rules }.into()),
+            db,
+            data: Arc::new(Data { rules }.into()),
             pfp,
             start: Instant::now(),
         }

@@ -35,7 +35,7 @@ async fn add(
         reply,
         guild.to_string()
     )
-    .execute(&ctx.data.read().await.db)
+    .execute(&ctx.db)
     .await?;
 
     let out = format!("Added rule `{}`!", trigger);
@@ -61,7 +61,7 @@ async fn remove(trigger: String, ctx: &Context) -> anyhow::Result<String> {
     };
 
     query!("delete from rules where trigger = $1", trigger)
-        .execute(&ctx.data.read().await.db)
+        .execute(&ctx.db)
         .await?
         .rows_affected();
 
@@ -99,7 +99,7 @@ async fn list(guild: Id<GuildMarker>, ctx: &Context) -> anyhow::Result<String> {
         out += &format!(
             "\n- {}\n- - {}",
             r.trigger,
-            truncate(&r.reply).replace("\n", "- - ")
+            truncate(&r.reply).replace('\n', "- - ")
         )
     });
 

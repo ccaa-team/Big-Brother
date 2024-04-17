@@ -1,5 +1,5 @@
 use core::str;
-use std::{panic::set_hook, sync::Arc};
+use std::sync::Arc;
 
 use crate::{
     structs::{BoardEntry, Settings},
@@ -8,8 +8,7 @@ use crate::{
 use sqlx::{query_as, PgPool};
 use tracing::info;
 use twilight_http::{
-    request::channel::{self, reaction::RequestReactionType::Unicode},
-    Client as HttpClient,
+    request::channel::reaction::RequestReactionType::Unicode, Client as HttpClient,
 };
 use twilight_model::{
     channel::{message::ReactionType, Message},
@@ -225,13 +224,12 @@ pub async fn add(reac: Box<ReactionAdd>, ctx: &Context) -> anyhow::Result<()> {
     )
     .await?;
 
-    let data = ctx.data.read().await;
     reactions_changed(
         reac.message_id,
         reac.channel_id,
         reac.guild_id.unwrap(),
         count,
-        &data.db,
+        &ctx.db,
         ctx,
     )
     .await
@@ -256,13 +254,12 @@ pub async fn remove(reac: Box<ReactionRemove>, ctx: &Context) -> anyhow::Result<
         .await?;
     let count = reaction_count(reac.channel_id, reac.message_id, msg.author.id, &ctx.http).await?;
 
-    let data = ctx.data.read().await;
     reactions_changed(
         reac.message_id,
         reac.channel_id,
         reac.guild_id.unwrap(),
         count,
-        &data.db,
+        &ctx.db,
         ctx,
     )
     .await
