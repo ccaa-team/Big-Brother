@@ -26,7 +26,7 @@ pub struct BoardEntry {
     pub message: String,
     pub guild_id: Id<GuildMarker>,
     pub message_id: Id<MessageMarker>,
-    pub post_id: Id<MessageMarker>,
+    pub post_id: Option<Id<MessageMarker>>,
     pub stars: i32,
 }
 
@@ -45,10 +45,8 @@ impl sqlx::FromRow<'_, PgRow> for BoardEntry {
                 .parse()
                 .unwrap(),
             post_id: row
-                .try_get::<String, _>("post_id")?
-                .as_str()
-                .parse()
-                .unwrap(),
+                .try_get::<Option<String>, _>("post_id")?
+                .map(|p| p.as_str().parse::<Id<MessageMarker>>().unwrap()),
             stars: row.try_get("stars")?,
         })
     }

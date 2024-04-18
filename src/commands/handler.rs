@@ -2,6 +2,7 @@ use crate::commands::{autoreply, average, uptime};
 
 use sqlx::Row;
 
+
 use twilight_model::{
     application::{
         command::{Command, CommandType},
@@ -78,12 +79,6 @@ pub async fn migrate(ctx: &Context) -> anyhow::Result<InteractionResponseData> {
             .await?;
     }
 
-    //pub message: String,
-    //pub guild_id: Id<GuildMarker>,
-    //pub message_id: Id<MessageMarker>,
-    //pub post_id: Id<MessageMarker>,
-    //pub stars: i32,
-
     for e in sqlx::query("select * from moyai")
         .fetch_all(&ctx.db)
         .await?
@@ -92,8 +87,8 @@ pub async fn migrate(ctx: &Context) -> anyhow::Result<InteractionResponseData> {
             .bind(e.get::<String, _>("message_content"))
             .bind(Id::<GuildMarker>::new(1023332212403351563).to_string())
             .bind(e.get::<String, _>("message_id"))
-            .bind(e.get::<String, _>("post_id"))
-            .bind(e.get::<String, _>("moyai_count"))
+            .bind(e.get::<Option<String>, _>("post_id"))
+            .bind::<i16>(e.get::<i64, _>("moyai_count").try_into().unwrap())
             .execute(&ctx.db)
             .await?;
     }

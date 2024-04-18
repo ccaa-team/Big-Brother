@@ -10,6 +10,7 @@ use std::env;
 use std::sync::Arc;
 use structs::Rule;
 use tokio::task::JoinSet;
+use tracing::info;
 use twilight_gateway::{stream::create_recommended, Config, ConfigBuilder, Event, Intents, Shard};
 use twilight_http::Client as HttpClient;
 use twilight_model::id::{
@@ -40,7 +41,9 @@ async fn main() -> anyhow::Result<()> {
     let shards = create_recommended(&http, config, config_callback).await?;
 
     let db = sqlx::PgPool::connect(&env::var("DATABASE_URL")?).await?;
-    migrate!().run(&db).await?;
+    if let Err(e) = migrate!().run(&db).await {
+        info!(?e);
+    };
     let rules: Vec<Rule> = query_as("select * from rules").fetch_all(&db).await?;
 
     let user = http.current_user().await?.model().await?;
@@ -50,9 +53,16 @@ async fn main() -> anyhow::Result<()> {
 
     let ctx = Context::new(app.id, http, db, pfp, rules);
 
-    ctx.interaction()
-        .set_guild_commands(TEST_GUILD, &commands())
-        .await?;
+    #[cfg(debug_assertions)]
+    {
+        ctx.interaction()
+            .set_guild_commands(TEST_GUILD, &[])
+            .await?;
+        ctx.interaction()
+            .set_guild_commands(TEST_GUILD, &commands())
+            .await?;
+    }
+    ctx.interaction().set_global_commands(&commands()).await?;
 
     let mut set = JoinSet::new();
     for shard in shards {

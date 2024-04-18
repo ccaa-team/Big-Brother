@@ -24,7 +24,7 @@ async fn add(
         .await
         .rules
         .iter()
-        .any(|r| r.trigger == trigger)
+        .any(|r| r.trigger == trigger && r.guild == guild)
     {
         return Ok("Rule already exists, delete it if you want to replace it.".to_owned());
     };
@@ -46,20 +46,21 @@ async fn add(
 
     Ok(out)
 }
-async fn remove(trigger: String, ctx: &Context) -> anyhow::Result<String> {
+async fn remove(trigger: String, guild: Id<GuildMarker>, ctx: &Context) -> anyhow::Result<String> {
     if !ctx
         .data
         .read()
         .await
         .rules
         .iter()
-        .any(|r| r.trigger == trigger)
+        .any(|r| r.guild == guild && r.trigger == trigger)
     {
         return Ok("The rule you're trying to remove doesn't exist.".to_owned());
     };
 
-    query("delete from rules where trigger = $1")
+    query("delete from rules where trigger = $1 and guild = $2")
         .bind(&trigger)
+        .bind(guild.to_string())
         .execute(&ctx.db)
         .await?
         .rows_affected();
@@ -69,7 +70,7 @@ async fn remove(trigger: String, ctx: &Context) -> anyhow::Result<String> {
         .rules
         .iter()
         .filter_map(|r| {
-            if r.trigger != trigger {
+            if r.trigger != trigger || r.guild != guild {
                 Some(r.clone())
             } else {
                 None
@@ -135,14 +136,8 @@ pub async fn interaction(
                 )
                 .await
             }
-            "remove" => remove(trigger.unwrap(), ctx).await,
-            "list" => {
-                list(
-                    cmd.guild_id.expect("this is only going to run in a guild"),
-                    ctx,
-                )
-                .await
-            }
+            "remove" => remove(trigger.unwrap(), cmd.guild_id.expect("see above"), ctx).await,
+            "list" => list(cmd.guild_id.expect("see abover"), ctx).await,
             _ => unreachable!(),
         }?)
         .flags(MessageFlags::EPHEMERAL)
