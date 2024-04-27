@@ -4,7 +4,7 @@ use twilight_model::gateway::payload::incoming::MessageCreate;
 use crate::context::Context;
 
 pub async fn handle(msg: Box<MessageCreate>, ctx: &Context) -> anyhow::Result<()> {
-    if msg.author.bot {
+    if msg.author.bot || msg.guild_id.is_none() {
         return Ok(());
     }
     //let start = Instant::now();
@@ -15,7 +15,10 @@ pub async fn handle(msg: Box<MessageCreate>, ctx: &Context) -> anyhow::Result<()
         .await
         .rules
         .iter()
-        .filter(|r| msg.content.contains(&r.trigger))
+        .filter(|r| {
+            r.guild == msg.guild_id.expect("i blame the government")
+                && msg.content.contains(&r.trigger)
+        })
         .map(|r| r.reply.clone())
         .collect::<Vec<String>>()
         .join(" ");
