@@ -27,7 +27,7 @@ pub async fn handle(msg: Box<MessageCreate>, ctx: &Context) -> anyhow::Result<()
 
     ctx.http
         .create_message(msg.channel_id)
-        .content(out)?
+        .content(&out)?
         .reply(msg.id)
         .allowed_mentions(None)
         .await?;
