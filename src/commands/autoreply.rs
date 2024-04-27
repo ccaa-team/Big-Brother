@@ -138,8 +138,8 @@ pub async fn interaction(
                 )
                 .await
             }
-            "remove" => remove(trigger.unwrap(), cmd.guild_id.expect("see above"), ctx).await,
-            "list" => list(cmd.guild_id.expect("see abover"), ctx).await,
+            "remove" => remove(trigger.unwrap(), int.guild_id.expect("see above"), ctx).await,
+            "list" => list(int.guild_id.expect("see abover"), ctx).await,
             _ => unreachable!(),
         }?)
         .flags(MessageFlags::EPHEMERAL)
