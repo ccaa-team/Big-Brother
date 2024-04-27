@@ -168,10 +168,9 @@ async fn create_post(
         Ok(m) => m.model().await?,
     };
 
-    sqlx::query("insert into board values ($1, $2, $3, $4, $5, $6)")
+    sqlx::query("insert into board values ($1, $2, $3, $4, $5)")
         .bind(msg.content)
         .bind(guild.to_string())
-        .bind(msg.channel_id.to_string())
         .bind(msg.id.to_string())
         .bind(post.id.to_string())
         .bind(count)

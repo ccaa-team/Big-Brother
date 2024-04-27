@@ -1,4 +1,4 @@
-use tokio::time::Instant;
+//use tokio::time::Instant;
 use twilight_model::gateway::payload::incoming::MessageCreate;
 
 use crate::context::Context;
@@ -7,7 +7,7 @@ pub async fn handle(msg: Box<MessageCreate>, ctx: &Context) -> anyhow::Result<()
     if msg.author.bot {
         return Ok(());
     }
-    let start = Instant::now();
+    //let start = Instant::now();
 
     let out = ctx
         .data
@@ -23,14 +23,14 @@ pub async fn handle(msg: Box<MessageCreate>, ctx: &Context) -> anyhow::Result<()
         return Ok(());
     }
 
-    let runtime = start.elapsed().as_nanos();
+    //let runtime = start.elapsed().as_nanos();
 
-    ctx.http
-        .create_message(msg.channel_id)
-        .content(&format!("{}\n\nProcessed in {} ns", out, runtime))?
-        .reply(msg.id)
-        .allowed_mentions(None)
-        .await?;
+    //ctx.http
+    //    .create_message(msg.channel_id)
+    //    .content(&format!("{}\n\nProcessed in {} ns", out, runtime))?
+    //    .reply(msg.id)
+    //    .allowed_mentions(None)
+    //    .await?;
 
     Ok(())
 }

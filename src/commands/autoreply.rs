@@ -7,6 +7,7 @@ use twilight_model::{
         CommandData, CommandDataOption, CommandOptionValue,
     },
     channel::message::MessageFlags,
+    gateway::payload::incoming::InteractionCreate,
     http::interaction::InteractionResponseData,
     id::{marker::GuildMarker, Id},
 };
@@ -107,6 +108,7 @@ async fn list(guild: Id<GuildMarker>, ctx: &Context) -> anyhow::Result<String> {
 }
 pub async fn interaction(
     cmd: &CommandData,
+    int: &InteractionCreate,
     ctx: &Context,
 ) -> anyhow::Result<InteractionResponseData> {
     let get_str = |o: CommandDataOption| -> String {
@@ -131,7 +133,7 @@ pub async fn interaction(
                 add(
                     trigger.unwrap(),
                     reply.unwrap(),
-                    cmd.guild_id.expect("this is only going to run in a guild"),
+                    int.guild_id.expect("this is only going to run in a guild"),
                     ctx,
                 )
                 .await

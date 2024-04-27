@@ -1,12 +1,13 @@
 use crate::context::Context;
 use twilight_model::{
     application::interaction::application_command::CommandData,
-    http::interaction::InteractionResponseData,
+    gateway::payload::incoming::InteractionCreate, http::interaction::InteractionResponseData,
 };
 use twilight_util::builder::InteractionResponseDataBuilder;
 
 pub async fn interaction(
     _data: &CommandData,
+    _int: &InteractionCreate,
     ctx: &Context,
 ) -> anyhow::Result<InteractionResponseData> {
     let elapsed = ctx.start.elapsed();
