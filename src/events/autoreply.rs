@@ -1,5 +1,7 @@
 //use tokio::time::Instant;
-use twilight_model::gateway::payload::incoming::MessageCreate;
+use twilight_model::{
+    channel::message::AllowedMentions, gateway::payload::incoming::MessageCreate,
+};
 
 use crate::context::Context;
 
@@ -9,6 +11,7 @@ pub async fn handle(msg: Box<MessageCreate>, ctx: &Context) -> anyhow::Result<()
     }
     //let start = Instant::now();
 
+    let content = msg.content.to_lowercase();
     let out = ctx
         .data
         .read()
@@ -16,8 +19,7 @@ pub async fn handle(msg: Box<MessageCreate>, ctx: &Context) -> anyhow::Result<()
         .rules
         .iter()
         .filter(|r| {
-            r.guild == msg.guild_id.expect("i blame the government")
-                && msg.content.contains(&r.trigger)
+            r.guild == msg.guild_id.expect("i blame the government") && content.contains(&r.trigger)
         })
         .map(|r| r.reply.clone())
         .collect::<Vec<String>>()
@@ -32,7 +34,12 @@ pub async fn handle(msg: Box<MessageCreate>, ctx: &Context) -> anyhow::Result<()
         .create_message(msg.channel_id)
         .content(&out)?
         .reply(msg.id)
-        .allowed_mentions(None)
+        .allowed_mentions(Some(&AllowedMentions {
+            parse: vec![],
+            replied_user: false,
+            roles: vec![],
+            users: vec![],
+        }))
         .await?;
 
     Ok(())

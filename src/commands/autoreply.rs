@@ -19,6 +19,7 @@ async fn add(
     guild: Id<GuildMarker>,
     ctx: &Context,
 ) -> anyhow::Result<String> {
+    let trigger = trigger.to_lowercase();
     if ctx
         .data
         .read()
@@ -48,6 +49,7 @@ async fn add(
     Ok(out)
 }
 async fn remove(trigger: String, guild: Id<GuildMarker>, ctx: &Context) -> anyhow::Result<String> {
+    let trigger = trigger.to_lowercase();
     if !ctx
         .data
         .read()
