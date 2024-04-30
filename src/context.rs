@@ -4,9 +4,7 @@ use crate::structs::Rule;
 use sqlx::PgPool;
 use tokio::sync::RwLock;
 use twilight_http::Client as HttpClient;
-use twilight_model::{
-    id::{marker::ApplicationMarker, Id},
-};
+use twilight_model::id::{marker::ApplicationMarker, Id};
 
 pub struct Data {
     pub rules: Vec<Rule>,
@@ -27,7 +25,6 @@ impl ContextRef {
         app_id: Id<ApplicationMarker>,
         http: Arc<HttpClient>,
         db: PgPool,
-        pfp: String,
         rules: Vec<Rule>,
     ) -> Self {
         Self {
@@ -35,7 +32,7 @@ impl ContextRef {
             app_id,
             db,
             data: Arc::new(Data { rules }.into()),
-            pfp: pfp.clone(),
+            pfp: "https://thevirt.ru/bot_pfp.png".to_owned(),
             start: Instant::now(),
         }
     }
@@ -53,10 +50,9 @@ impl Context {
         app_id: Id<ApplicationMarker>,
         http: Arc<HttpClient>,
         db: PgPool,
-        pfp: String,
         rules: Vec<Rule>,
     ) -> Self {
-        Self(Arc::new(ContextRef::new(app_id, http, db, pfp, rules)))
+        Self(Arc::new(ContextRef::new(app_id, http, db, rules)))
     }
 }
 

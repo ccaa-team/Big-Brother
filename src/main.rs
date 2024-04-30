@@ -45,9 +45,8 @@ async fn main() -> anyhow::Result<()> {
     let user = http.current_user().await?.model().await?;
     let avatar = user.avatar.unwrap();
     let ext = if avatar.is_animated() { "gif" } else { "png" };
-    let pfp = format!("https://cdn.discordapp.com/{}/{}.{}", user.id, avatar, ext);
 
-    let ctx = Context::new(app.id, http, db, pfp, rules);
+    let ctx = Context::new(app.id, http, db, rules);
 
     #[cfg(debug_assertions)]
     {
