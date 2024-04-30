@@ -2,6 +2,7 @@ pub mod commands;
 mod context;
 mod events;
 pub mod structs;
+mod utils;
 
 use commands::commands;
 use context::Context;
@@ -13,14 +14,9 @@ use tokio::task::JoinSet;
 use tracing::info;
 use twilight_gateway::{stream::create_recommended, Config, ConfigBuilder, Event, Intents, Shard};
 use twilight_http::Client as HttpClient;
-use twilight_model::id::{
-    marker::{GuildMarker, UserMarker},
-    Id,
-};
 
-pub const OWNER_ID: Id<UserMarker> = Id::new(852877128844050432);
-pub const TEST_GUILD: Id<GuildMarker> = Id::new(1089645999787610287);
-pub const EMBED_COLOR: u32 = 0x7e68d0;
+#[cfg(debug_assertions)]
+use crate::utils::TEST_GUILD;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -60,7 +56,7 @@ async fn main() -> anyhow::Result<()> {
             .await?;
         ctx.interaction()
             .set_guild_commands(TEST_GUILD, &commands())
-            .await?;
+            .await?
     }
     ctx.interaction().set_global_commands(&commands()).await?;
 

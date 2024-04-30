@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use crate::{
     structs::{BoardEntry, Settings},
+    utils::EMBED_COLOR,
     Context,
 };
 use sqlx::{query_as, PgPool};
@@ -68,31 +69,33 @@ async fn reactions_changed(
     db: &PgPool,
     ctx: &Context,
 ) -> anyhow::Result<()> {
-    let settings: Settings = query_as("select * from settings where guild = $1")
+    let settings: Option<Settings> = query_as("select * from settings where guild = $1")
         .bind(guild.to_string())
         .fetch_optional(db)
-        .await?
-        .unwrap_or(Settings {
-            guild,
-            board_threshold: 0,
-            board_channel: None,
-        });
+        .await?;
 
-    if settings.board_threshold == 0 {
+    if settings.is_none() {
         return Ok(());
     }
+    let settings = settings.unwrap();
+
+    if settings.board_threshold.is_none() {
+        return Ok(());
+    }
+    let threshold = settings.board_threshold.unwrap();
+
     let entry: Option<BoardEntry> = query_as("select * from board where message_id = $1")
         .bind(msg.to_string())
         .fetch_optional(db)
         .await?;
 
     if let Some(entry) = entry {
-        if count >= settings.board_threshold.into() {
+        if count >= threshold {
             update_post(entry, count, &settings, db, ctx).await
         } else {
             delete_post(entry, &settings, db, ctx).await
         }
-    } else if count >= settings.board_threshold.into() {
+    } else if count >= threshold {
         let message = ctx.http.message(channel, msg).await?.model().await?;
         create_post(message, guild, count, &settings, db, ctx).await
     } else {
@@ -140,7 +143,7 @@ async fn create_post(
         }?
     };
     let mut embed = EmbedBuilder::new()
-        .color(crate::EMBED_COLOR)
+        .color(EMBED_COLOR)
         .author(EmbedAuthorBuilder::new(msg.author.name).icon_url(pfp))
         .description(&msg.content)
         .field(EmbedFieldBuilder::new(

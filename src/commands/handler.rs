@@ -1,4 +1,7 @@
-use crate::commands::{autoreply, average, uptime};
+use crate::{
+    commands::{autoreply, average, uptime},
+    utils::OWNER_ID,
+};
 
 use twilight_model::{
     application::{
@@ -28,7 +31,7 @@ async fn todo(name: &str) -> InteractionResponseData {
             parse: vec![],
             replied_user: false,
             roles: vec![],
-            users: vec![crate::OWNER_ID],
+            users: vec![OWNER_ID],
         })
         .build()
 }

@@ -1,6 +1,10 @@
 use std::collections::VecDeque;
 
-use crate::{context::Context, structs::Rule};
+use crate::{
+    context::Context,
+    structs::Rule,
+    utils::{error_embed, role_check},
+};
 use sqlx::query;
 use twilight_model::{
     application::interaction::application_command::{
@@ -9,7 +13,10 @@ use twilight_model::{
     channel::message::MessageFlags,
     gateway::payload::incoming::InteractionCreate,
     http::interaction::InteractionResponseData,
-    id::{marker::GuildMarker, Id},
+    id::{
+        marker::{GuildMarker, RoleMarker},
+        Id,
+    },
 };
 use twilight_util::builder::InteractionResponseDataBuilder;
 
@@ -113,6 +120,28 @@ pub async fn interaction(
     int: &InteractionCreate,
     ctx: &Context,
 ) -> anyhow::Result<InteractionResponseData> {
+    if let Some(member) = &int.member {
+        let role: Option<(String,)> =
+            sqlx::query_as("select reply_role from settings where guild = $1")
+                .bind(&int.guild_id.unwrap().to_string())
+                .fetch_optional(&ctx.db)
+                .await?;
+        if let Some(role) = role {
+            let role: Id<RoleMarker> = role.0.parse().unwrap();
+            if let Err(reply) = role_check(member.to_owned(), role) {
+                return Ok(InteractionResponseDataBuilder::new()
+                    .embeds(vec![error_embed(reply)])
+                    .flags(MessageFlags::EPHEMERAL)
+                    .build());
+            }
+        }
+    } else {
+        return Ok(InteractionResponseDataBuilder::new()
+            .content("guh??")
+            .flags(MessageFlags::EPHEMERAL)
+            .build());
+    }
+
     let get_str = |o: CommandDataOption| -> String {
         if let CommandOptionValue::String(s) = o.value {
             s

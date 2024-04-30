@@ -4,7 +4,9 @@ use crate::structs::Rule;
 use sqlx::PgPool;
 use tokio::sync::RwLock;
 use twilight_http::Client as HttpClient;
-use twilight_model::id::{marker::ApplicationMarker, Id};
+use twilight_model::{
+    id::{marker::ApplicationMarker, Id},
+};
 
 pub struct Data {
     pub rules: Vec<Rule>,
@@ -33,7 +35,7 @@ impl ContextRef {
             app_id,
             db,
             data: Arc::new(Data { rules }.into()),
-            pfp,
+            pfp: pfp.clone(),
             start: Instant::now(),
         }
     }

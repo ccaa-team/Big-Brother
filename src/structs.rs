@@ -1,6 +1,6 @@
 use sqlx::{postgres::PgRow, Row};
 use twilight_model::id::{
-    marker::{ChannelMarker, GuildMarker, MessageMarker},
+    marker::{ChannelMarker, GuildMarker, MessageMarker, RoleMarker},
     Id,
 };
 
@@ -55,8 +55,9 @@ impl sqlx::FromRow<'_, PgRow> for BoardEntry {
 #[derive(Clone)]
 pub struct Settings {
     pub guild: Id<GuildMarker>,
-    pub board_threshold: i16,
+    pub board_threshold: Option<i32>,
     pub board_channel: Option<Id<ChannelMarker>>,
+    pub reply_role: Option<Id<RoleMarker>>,
 }
 
 impl sqlx::FromRow<'_, PgRow> for Settings {
@@ -65,9 +66,13 @@ impl sqlx::FromRow<'_, PgRow> for Settings {
         // inject squeel)
         Ok(Self {
             guild: row.try_get::<String, _>("guild")?.as_str().parse().unwrap(),
-            board_threshold: row.try_get("board_threshold")?,
+            board_threshold: row.try_get("board_threshold").ok(),
             board_channel: row
                 .try_get("board_channel")
+                .ok()
+                .map(|c: String| c.as_str().parse().unwrap()),
+            reply_role: row
+                .try_get("reply_role")
                 .ok()
                 .map(|c: String| c.as_str().parse().unwrap()),
         })
