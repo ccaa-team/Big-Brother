@@ -50,12 +50,16 @@ pub async fn handle(msg: &MessageCreate, ctx: &Context) -> anyhow::Result<()> {
             _ => return Ok(()),
         };
 
-        ctx.http
-            .create_message(msg.channel_id)
-            .reply(msg.id)
-            .content(&out)
-            .unwrap()
-            .await?;
+        let mut iter = out.chars().peekable();
+        while iter.peek().is_some() {
+            let res: String = iter.by_ref().take(2000).collect();
+            ctx.http
+                .create_message(msg.channel_id)
+                .reply(msg.id)
+                .content(&res)
+                .unwrap()
+                .await?;
+        }
     }
 
     Ok(())
