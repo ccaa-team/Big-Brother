@@ -17,6 +17,13 @@ fn stringify<T: AsRef<str>>(row: &PgRow, name: T) -> String {
         .ok()
         .or_else(|| kms!(row, name, i32))
         .or_else(|| Some("None".to_owned()))
+        .map(|s| {
+            if s.starts_with("http") {
+                format!("<{s}>")
+            } else {
+                s
+            }
+        })
         .unwrap()
 }
 
