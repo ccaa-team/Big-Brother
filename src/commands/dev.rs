@@ -30,9 +30,9 @@ fn stringify<T: AsRef<str>>(row: &PgRow, name: T) -> String {
 async fn squeel<T: AsRef<str>>(sql: T, ctx: &Context) -> anyhow::Result<String> {
     let result = match query(sql.as_ref()).fetch_all(&ctx.db).await {
         Ok(v) => v,
-        Err(e) => return Ok(format!("```\n{e}\n```")),
+        Err(e) => return Ok(e.to_string()),
     };
-    let mut out = String::from("```\n");
+    let mut out = String::new();
 
     for (i, row) in result.iter().enumerate() {
         out += &format!("{}:\n", i);
@@ -41,10 +41,16 @@ async fn squeel<T: AsRef<str>>(sql: T, ctx: &Context) -> anyhow::Result<String> 
         }
     }
 
-    out.push_str("```");
-
     Ok(out)
 }
+
+const PREFIX: &'static str = {
+    if cfg!(debug_assertions) {
+        "'"
+    } else {
+        ";"
+    }
+};
 
 pub async fn handle(msg: &MessageCreate, ctx: &Context) -> anyhow::Result<()> {
     if msg.author.id != OWNER_ID {
@@ -52,8 +58,13 @@ pub async fn handle(msg: &MessageCreate, ctx: &Context) -> anyhow::Result<()> {
     }
 
     if let Some((cmd, arg)) = msg.content.split_once(" ") {
-        let out = match cmd {
-            ";sql" => squeel(arg, ctx).await?,
+        if !cmd.starts_with(PREFIX) {
+            return Ok(());
+        }
+        let mut c = cmd.chars();
+        c.next();
+        let out = match c.as_str() {
+            "sql" => squeel(arg, ctx).await?,
             _ => return Ok(()),
         };
 
