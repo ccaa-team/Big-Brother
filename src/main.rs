@@ -42,10 +42,6 @@ async fn main() -> anyhow::Result<()> {
     };
     let rules: Vec<Rule> = query_as("select * from rules").fetch_all(&db).await?;
 
-    let user = http.current_user().await?.model().await?;
-    let avatar = user.avatar.unwrap();
-    let ext = if avatar.is_animated() { "gif" } else { "png" };
-
     let ctx = Context::new(app.id, http, db, rules);
 
     #[cfg(debug_assertions)]
@@ -55,7 +51,7 @@ async fn main() -> anyhow::Result<()> {
             .await?;
         ctx.interaction()
             .set_guild_commands(TEST_GUILD, &commands())
-            .await?
+            .await?;
     }
     ctx.interaction().set_global_commands(&commands()).await?;
 

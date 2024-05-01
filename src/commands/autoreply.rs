@@ -120,14 +120,24 @@ pub async fn interaction(
     int: &InteractionCreate,
     ctx: &Context,
 ) -> anyhow::Result<InteractionResponseData> {
+    let error_interaction = Ok(InteractionResponseDataBuilder::new()
+        .content("guh??")
+        .flags(MessageFlags::EPHEMERAL)
+        .build());
+
     if let Some(member) = &int.member {
-        let role: Option<(String,)> =
-            sqlx::query_as("select reply_role from settings where guild = $1")
+        let settings: (Option<String>,) =
+            match sqlx::query_as("select reply_role from settings where guild = $1")
                 .bind(&int.guild_id.unwrap().to_string())
                 .fetch_optional(&ctx.db)
-                .await?;
-        if let Some(role) = role {
-            let role: Id<RoleMarker> = role.0.parse().unwrap();
+                .await?
+            {
+                Some(s) => s,
+                None => return error_interaction,
+            };
+
+        if let (Some(role),) = settings {
+            let role: Id<RoleMarker> = role.parse().unwrap();
             if let Err(reply) = role_check(member.to_owned(), role) {
                 return Ok(InteractionResponseDataBuilder::new()
                     .embeds(vec![error_embed(reply)])
@@ -136,10 +146,7 @@ pub async fn interaction(
             }
         }
     } else {
-        return Ok(InteractionResponseDataBuilder::new()
-            .content("guh??")
-            .flags(MessageFlags::EPHEMERAL)
-            .build());
+        return error_interaction;
     }
 
     let get_str = |o: CommandDataOption| -> String {

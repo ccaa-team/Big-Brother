@@ -4,5 +4,5 @@ create table board (
   guild_id text not null,
   message_id text not null unique,
   post_id text unique,
-  stars int not null
+  stars int4 not null
 )

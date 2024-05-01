@@ -5,7 +5,7 @@ use twilight_model::{
 
 use crate::context::Context;
 
-pub async fn handle(msg: Box<MessageCreate>, ctx: &Context) -> anyhow::Result<()> {
+pub async fn handle(msg: &MessageCreate, ctx: &Context) -> anyhow::Result<()> {
     if msg.author.bot || msg.guild_id.is_none() {
         return Ok(());
     }
