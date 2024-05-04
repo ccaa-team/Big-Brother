@@ -1,12 +1,12 @@
 use poise::{
-    command, say_reply, send_reply,
-    serenity_prelude::{CreateAllowedMentions, CreateEmbed, CreateMessage},
+    command, send_reply,
+    serenity_prelude::{CreateAllowedMentions, CreateEmbed},
     CreateReply,
 };
-use sqlx::{query, query_as};
+use sqlx::{query};
 
 use crate::{
-    structs::{Rule, Settings},
+    structs::{Rule},
     utils::{get_settings, EMBED_AUTHOR, EMBED_COLOR, OWNER_ID},
     Context, Error,
 };

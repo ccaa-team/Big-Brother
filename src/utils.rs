@@ -34,7 +34,7 @@ pub async fn get_settings(guild: GuildId, db: &PgPool) -> anyhow::Result<Setting
         .fetch_optional(db)
         .await?;
 
-    if let None = settings {
+    if settings.is_none() {
         sqlx::query("insert into settings(guild) values($1)")
             .bind(guild.to_string())
             .execute(db)
