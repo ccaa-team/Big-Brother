@@ -40,10 +40,10 @@ async fn main() -> anyhow::Result<()> {
             //on_error: (),
             //pre_command: (),
             //post_command: (),
-            //command_check: (),
-            skip_checks_for_owners: true,
-            //reply_callback: (),
             // maybe at some point paywall shit? :tshrug:
+            //command_check: (),
+            //skip_checks_for_owners: true,
+            //reply_callback: (),
             manual_cooldowns: false,
             //require_cache_for_guild_check: (),
             event_handler: |ctx, event, framework, data| {

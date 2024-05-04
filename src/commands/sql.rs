@@ -31,7 +31,7 @@ fn stringify(row: &PgRow, name: impl AsRef<str>) -> String {
         .unwrap()
 }
 
-#[command(prefix_command, owners_only)]
+#[command(prefix_command, owners_only, hide_in_help, track_edits)]
 pub async fn sql(ctx: Context<'_>, #[rest] sql: String) -> Result<(), Error> {
     let start = Instant::now();
     let result = query(&sql).fetch_all(&ctx.data().db).await?;

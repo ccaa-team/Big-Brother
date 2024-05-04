@@ -1,12 +1,13 @@
 use poise::{
-    command,
-    serenity_prelude::{CreateAllowedMentions, CreateEmbed},
+    command, say_reply, send_reply,
+    serenity_prelude::{CreateAllowedMentions, CreateEmbed, CreateMessage},
+    CreateReply,
 };
-use sqlx::query;
+use sqlx::{query, query_as};
 
 use crate::{
-    structs::Rule,
-    utils::{EMBED_AUTHOR, EMBED_COLOR},
+    structs::{Rule, Settings},
+    utils::{get_settings, EMBED_AUTHOR, EMBED_COLOR, OWNER_ID},
     Context, Error,
 };
 
@@ -16,18 +17,46 @@ use crate::{
     guild_only,
     subcommand_required,
     subcommands("add", "remove", "list"),
-    ephemeral
+    ephemeral,
+    track_edits
 )]
+// The main autoreply command, mainly shown to show the rest
 pub async fn autoreply(_: Context<'_>) -> Result<(), Error> {
     unreachable!()
 }
 
+async fn role(ctx: Context<'_>) -> Result<(bool, String), Error> {
+    if ctx.author().id == OWNER_ID {
+        return Ok((true, "".to_owned()));
+    };
+    let settings = get_settings(ctx.guild_id().unwrap(), &ctx.data().db).await?;
+
+    match settings.reply_role {
+        None => Ok((true, "".to_owned())),
+        Some(r) => {
+            let user = ctx.author_member().await.unwrap();
+            Ok((user.roles.contains(&r), format!("<@&{r}>")))
+        }
+    }
+}
+
 #[command(slash_command, prefix_command, guild_only, ephemeral)]
+/// Add an autoreply
+///
+/// Example: ;autoreply add "me when" "me when the"
 async fn add(
     ctx: Context<'_>,
     #[description = "The trigger text"] trigger: String,
     #[description = "Text to reply with"] reply: String,
 ) -> Result<(), Error> {
+    if let Ok((res, mention)) = role(ctx).await {
+        if !res {
+            let msg = CreateReply::default().content(format!("You're missing the role required for the command, are you sure you have {mention}?")).allowed_mentions(CreateAllowedMentions::new().empty_roles());
+            send_reply(ctx, msg).await?;
+            return Ok(());
+        }
+    };
+
     let trigger = trigger.to_lowercase();
     let guild = ctx.guild_id().unwrap();
     if ctx
@@ -64,10 +93,21 @@ async fn add(
 }
 
 #[command(slash_command, prefix_command, guild_only, ephemeral)]
+/// Remove an autoreply
+///
+/// Example: ;autoreply remove balls
 async fn remove(
     ctx: Context<'_>,
     #[description = "The trigger text"] trigger: String,
 ) -> Result<(), Error> {
+    if let Ok((res, mention)) = role(ctx).await {
+        if !res {
+            let msg = CreateReply::default().content(format!("You're missing the role required for the command, are you sure you have {mention}?")).allowed_mentions(CreateAllowedMentions::new().empty_roles());
+            send_reply(ctx, msg).await?;
+            return Ok(());
+        }
+    };
+
     let trigger = trigger.to_lowercase();
     let guild = ctx.guild_id().unwrap();
     if !ctx
@@ -117,6 +157,7 @@ fn truncate(s: &String) -> String {
     s
 }
 #[command(slash_command, prefix_command, guild_only, ephemeral)]
+/// List all autoreplies for the current guild.
 async fn list(ctx: Context<'_>) -> Result<(), Error> {
     let mut out = String::new();
     let guild = ctx.guild_id().unwrap();

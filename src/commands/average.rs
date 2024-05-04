@@ -2,7 +2,12 @@ use poise::{command, say_reply};
 
 use crate::{Context, Error};
 
-#[command(slash_command, prefix_command, ephemeral)]
+#[command(prefix_command, ephemeral, track_edits)]
+/// Calculate the average of an array of numbers, separated by spaces
+///
+/// Somehow doesn't work as a slash command
+///
+/// Example: ;average 7 8 9
 pub async fn average(
     ctx: Context<'_>,
     #[description = "Array of numbers, separated by spaces"] array: Vec<f64>,

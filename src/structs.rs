@@ -49,7 +49,7 @@ impl sqlx::FromRow<'_, PgRow> for BoardEntry {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Settings {
     pub guild: GuildId,
     pub board_threshold: Option<i32>,

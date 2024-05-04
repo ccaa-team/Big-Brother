@@ -2,7 +2,8 @@ use poise::command;
 
 use crate::{Context, Error};
 
-#[command(slash_command, prefix_command)]
+#[command(slash_command, prefix_command, track_edits)]
+/// Get the bot's uptime, shrimple as that
 pub async fn uptime(ctx: Context<'_>) -> Result<(), Error> {
     let elapsed = ctx.data().start.elapsed();
     let out = format!(
