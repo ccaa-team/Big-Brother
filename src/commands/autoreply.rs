@@ -1,7 +1,14 @@
-use poise::command;
+use poise::{
+    command,
+    serenity_prelude::{CreateAllowedMentions, CreateEmbed},
+};
 use sqlx::query;
 
-use crate::{structs::Rule, Context, Error};
+use crate::{
+    structs::Rule,
+    utils::{EMBED_AUTHOR, EMBED_COLOR},
+    Context, Error,
+};
 
 #[command(
     slash_command,
@@ -126,7 +133,24 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
         });
     }
 
-    poise::say_reply(ctx, out).await?;
+    let embed = CreateEmbed::new()
+        .author(EMBED_AUTHOR.to_owned())
+        .color(EMBED_COLOR)
+        .description(out);
+    poise::send_reply(
+        ctx,
+        poise::CreateReply {
+            content: None,
+            embeds: vec![embed],
+            attachments: vec![],
+            ephemeral: Some(true),
+            components: None,
+            allowed_mentions: Some(CreateAllowedMentions::new().replied_user(false)),
+            reply: true,
+            __non_exhaustive: (),
+        },
+    )
+    .await?;
 
     Ok(())
 }

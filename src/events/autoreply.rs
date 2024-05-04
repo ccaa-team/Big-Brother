@@ -14,7 +14,7 @@ pub async fn handle(ctx: &Context, data: &Data, msg: &Message) -> anyhow::Result
         .unwrap()
         .iter()
         .filter(|r| r.guild == guild && content.contains(&r.trigger))
-        .fold(String::new(), |a, b| a + &b.reply);
+        .fold(String::new(), |a, b| a + &b.reply + " ");
 
     if out.is_empty() {
         return Ok(());
