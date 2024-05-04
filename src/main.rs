@@ -42,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
             //post_command: (),
             // maybe at some point paywall shit? :tshrug:
             //command_check: (),
-            //skip_checks_for_owners: true,
+            skip_checks_for_owners: true,
             //reply_callback: (),
             manual_cooldowns: false,
             //require_cache_for_guild_check: (),
