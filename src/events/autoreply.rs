@@ -1,46 +1,26 @@
-//use tokio::time::Instant;
-use twilight_model::{
-    channel::message::AllowedMentions, gateway::payload::incoming::MessageCreate,
-};
+use crate::Data;
+use poise::serenity_prelude::{Context, Message};
 
-use crate::context::Context;
-
-pub async fn handle(msg: &MessageCreate, ctx: &Context) -> anyhow::Result<()> {
+pub async fn handle(ctx: &Context, data: &Data, msg: &Message) -> anyhow::Result<()> {
     if msg.author.bot || msg.guild_id.is_none() {
         return Ok(());
     }
-    //let start = Instant::now();
 
     let content = msg.content.to_lowercase();
-    let out = ctx
-        .data
-        .read()
-        .await
+    let guild = msg.guild_id.unwrap();
+    let out = data
         .rules
+        .read()
+        .unwrap()
         .iter()
-        .filter(|r| {
-            r.guild == msg.guild_id.expect("i blame the government") && content.contains(&r.trigger)
-        })
-        .map(|r| r.reply.clone())
-        .collect::<Vec<String>>()
-        .join(" ");
+        .filter(|r| r.guild == guild && content.contains(&r.trigger))
+        .fold(String::new(), |a, b| a + &b.reply);
+
     if out.is_empty() {
         return Ok(());
     }
 
-    //let runtime = start.elapsed().as_nanos();
-
-    ctx.http
-        .create_message(msg.channel_id)
-        .content(&out)?
-        .reply(msg.id)
-        .allowed_mentions(Some(&AllowedMentions {
-            parse: vec![],
-            replied_user: false,
-            roles: vec![],
-            users: vec![],
-        }))
-        .await?;
+    msg.reply(&ctx.http, out).await?;
 
     Ok(())
 }

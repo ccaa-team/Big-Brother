@@ -1,32 +1,15 @@
-use twilight_model::{
-    application::interaction::application_command::{CommandData, CommandOptionValue},
-    channel::message::MessageFlags,
-    gateway::payload::incoming::InteractionCreate,
-    http::interaction::InteractionResponseData,
-};
-use twilight_util::builder::InteractionResponseDataBuilder;
+use poise::{command, say_reply};
 
-use crate::context::Context;
+use crate::{Context, Error};
 
-pub async fn interaction(
-    cmd: &CommandData,
-    _int: &InteractionCreate,
-    _ctx: &Context,
-) -> anyhow::Result<InteractionResponseData> {
-    let args = if let CommandOptionValue::String(args) = &cmd.options[0].value {
-        args
-    } else {
-        unreachable!()
-    };
-    let array: Vec<usize> = args
-        .split(';')
-        .map(str::parse)
-        .collect::<Result<Vec<_>, _>>()?;
+#[command(slash_command, prefix_command, ephemeral)]
+pub async fn average(
+    ctx: Context<'_>,
+    #[description = "Array of numbers, separated by spaces"] array: Vec<f64>,
+) -> Result<(), Error> {
+    let size = array.len() as f64;
+    let avg: f64 = array.iter().sum::<f64>() / size;
+    say_reply(ctx, avg.to_string()).await?;
 
-    let out = array.iter().sum::<usize>() / array.len();
-
-    Ok(InteractionResponseDataBuilder::new()
-        .content(format!("Result: {out}"))
-        .flags(MessageFlags::EPHEMERAL)
-        .build())
+    Ok(())
 }

@@ -1,102 +1,93 @@
+use std::{
+    collections::HashSet,
+    env,
+    sync::{Arc, RwLock},
+    time::Instant,
+};
 pub mod commands;
-mod context;
-mod events;
+pub mod events;
 pub mod structs;
-mod utils;
-
-use commands::commands;
-use context::Context;
-use sqlx::{migrate, query_as};
-use std::env;
-use std::sync::Arc;
+pub mod utils;
+use sqlx::{query_as, PgPool};
 use structs::Rule;
-use tokio::task::JoinSet;
-use tracing::info;
-use twilight_gateway::{stream::create_recommended, Config, ConfigBuilder, Event, Intents, Shard};
-use twilight_http::Client as HttpClient;
 
-#[cfg(debug_assertions)]
-use crate::utils::TEST_GUILD;
+use poise::{serenity_prelude as serenity, EditTracker};
+use utils::OWNER_ID;
+
+pub struct Data {
+    pub rules: RwLock<Vec<Rule>>,
+    pub start: Instant,
+    pub db: PgPool,
+}
+pub type Error = Box<dyn std::error::Error + Send + Sync>;
+pub type Context<'a> = poise::Context<'a, Data, Error>;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Initialize the tracing subscriber.
     tracing_subscriber::fmt::init();
-
-    let token = env::var("token")?;
-    let intents = Intents::GUILDS
-        | Intents::GUILD_MESSAGES
-        | Intents::MESSAGE_CONTENT
-        | Intents::GUILD_MESSAGE_REACTIONS;
-
-    let http = Arc::new(HttpClient::new(token.clone()));
-    let app = http.current_user_application().await?.model().await?;
-
-    let config = Config::new(token.clone(), intents);
-    let config_callback = |_, builder: ConfigBuilder| builder.build();
-    let shards = create_recommended(&http, config, config_callback).await?;
+    let token = env::var("token").expect("blehh");
+    let intents = serenity::GatewayIntents::all();
 
     let db = sqlx::PgPool::connect(&env::var("DATABASE_URL")?).await?;
-    if let Err(e) = migrate!().run(&db).await {
-        info!(?e);
-    };
     let rules: Vec<Rule> = query_as("select * from rules").fetch_all(&db).await?;
 
-    let ctx = Context::new(app.id, http, db, rules);
+    let mut owners = HashSet::new();
+    owners.insert(OWNER_ID);
 
-    #[cfg(debug_assertions)]
-    {
-        ctx.interaction()
-            .set_guild_commands(TEST_GUILD, &[])
-            .await?;
-        ctx.interaction()
-            .set_guild_commands(TEST_GUILD, &commands())
-            .await?;
-    }
-    ctx.interaction().set_global_commands(&commands()).await?;
+    let framework = poise::Framework::builder()
+        .options(poise::FrameworkOptions {
+            commands: commands::list(),
+            //on_error: (),
+            //pre_command: (),
+            //post_command: (),
+            //command_check: (),
+            skip_checks_for_owners: true,
+            //reply_callback: (),
+            // maybe at some point paywall shit? :tshrug:
+            manual_cooldowns: false,
+            //require_cache_for_guild_check: (),
+            event_handler: |ctx, event, framework, data| {
+                Box::pin(events::handle(ctx, event, framework, data))
+            },
+            //listener: (),
+            prefix_options: poise::PrefixFrameworkOptions {
+                prefix: Some(utils::PREFIX.to_owned()),
+                additional_prefixes: vec![],
+                //neat, but later
+                //dynamic_prefix: (),
+                //stripped_dynamic_prefix: (),
+                mention_as_prefix: true,
+                edit_tracker: Some(Arc::new(EditTracker::for_timespan(
+                    std::time::Duration::from_secs(3600),
+                ))),
+                execute_untracked_edits: true,
+                //ignore_edits_if_not_yet_responded: (),
+                //execute_self_messages: (),
+                //ignore_bots: (),
+                //ignore_thread_creation: (),
+                case_insensitive_commands: true,
+                ..Default::default()
+            },
+            owners,
+            ..Default::default()
+        })
+        .setup(|ctx, _ready, framework| {
+            Box::pin(async move {
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                Ok(Data {
+                    rules: rules.into(),
+                    start: Instant::now(),
+                    db,
+                })
+            })
+        })
+        .build();
 
-    let mut set = JoinSet::new();
-    for shard in shards {
-        set.spawn(tokio::spawn(runner(shard, ctx.clone())));
-    }
+    let client = serenity::ClientBuilder::new(token, intents)
+        .framework(framework)
+        .await;
 
-    set.join_next().await;
+    client?.start().await?;
+
     Ok(())
-}
-
-async fn runner(mut shard: Shard, ctx: Context) {
-    loop {
-        let event = match shard.next_event().await {
-            Ok(event) => event,
-            Err(source) => {
-                tracing::warn!(?source, "error receiving event");
-                if source.is_fatal() {
-                    break;
-                }
-
-                continue;
-            }
-        };
-
-        tokio::spawn({
-            let ctx = ctx.clone();
-            async move {
-                match handle_event(event, &ctx).await {
-                    Ok(_) => (),
-                    Err(err) => tracing::warn!(?err),
-                };
-            }
-        });
-    }
-}
-
-async fn handle_event(e: Event, ctx: &Context) -> anyhow::Result<()> {
-    match e {
-        Event::Ready(ready) => {
-            tracing::info!("Running in {} guilds.", ready.guilds.len());
-            Ok(())
-        }
-        Event::InteractionCreate(int) => commands::interaction(int, ctx).await,
-        _ => events::handle(e, ctx).await,
-    }
 }

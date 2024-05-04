@@ -1,14 +1,11 @@
+use poise::serenity_prelude::{ChannelId, GuildId, MessageId, RoleId};
 use sqlx::{postgres::PgRow, Row};
-use twilight_model::id::{
-    marker::{ChannelMarker, GuildMarker, MessageMarker, RoleMarker},
-    Id,
-};
 
 #[derive(Clone)]
 pub struct Rule {
     pub trigger: String,
     pub reply: String,
-    pub guild: Id<GuildMarker>,
+    pub guild: GuildId,
 }
 
 impl sqlx::FromRow<'_, PgRow> for Rule {
@@ -16,7 +13,7 @@ impl sqlx::FromRow<'_, PgRow> for Rule {
         Ok(Self {
             trigger: row.try_get("trigger")?,
             reply: row.try_get("reply")?,
-            guild: row.try_get::<String, _>("guild")?.as_str().parse().unwrap(),
+            guild: row.try_get::<String, _>("guild")?.parse().unwrap(),
         })
     }
 }
@@ -24,9 +21,9 @@ impl sqlx::FromRow<'_, PgRow> for Rule {
 #[derive(Clone)]
 pub struct BoardEntry {
     pub message: String,
-    pub guild_id: Id<GuildMarker>,
-    pub message_id: Id<MessageMarker>,
-    pub post_id: Option<Id<MessageMarker>>,
+    pub guild_id: GuildId,
+    pub message_id: MessageId,
+    pub post_id: Option<MessageId>,
     pub stars: i32,
 }
 
@@ -46,7 +43,7 @@ impl sqlx::FromRow<'_, PgRow> for BoardEntry {
                 .unwrap(),
             post_id: row
                 .try_get::<Option<String>, _>("post_id")?
-                .map(|p| p.as_str().parse::<Id<MessageMarker>>().unwrap()),
+                .map(|p| p.as_str().parse::<MessageId>().unwrap()),
             stars: row.try_get("stars")?,
         })
     }
@@ -54,10 +51,10 @@ impl sqlx::FromRow<'_, PgRow> for BoardEntry {
 
 #[derive(Clone)]
 pub struct Settings {
-    pub guild: Id<GuildMarker>,
+    pub guild: GuildId,
     pub board_threshold: Option<i32>,
-    pub board_channel: Option<Id<ChannelMarker>>,
-    pub reply_role: Option<Id<RoleMarker>>,
+    pub board_channel: Option<ChannelId>,
+    pub reply_role: Option<RoleId>,
 }
 
 impl sqlx::FromRow<'_, PgRow> for Settings {

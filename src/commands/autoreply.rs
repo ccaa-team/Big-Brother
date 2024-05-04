@@ -1,94 +1,104 @@
-use std::collections::VecDeque;
-
-use crate::{
-    context::Context,
-    structs::Rule,
-    utils::{error_embed, role_check},
-};
+use poise::command;
 use sqlx::query;
-use twilight_model::{
-    application::interaction::application_command::{
-        CommandData, CommandDataOption, CommandOptionValue,
-    },
-    channel::message::MessageFlags,
-    gateway::payload::incoming::InteractionCreate,
-    http::interaction::InteractionResponseData,
-    id::{
-        marker::{GuildMarker, RoleMarker},
-        Id,
-    },
-};
-use twilight_util::builder::InteractionResponseDataBuilder;
 
+use crate::{structs::Rule, Context, Error};
+
+#[command(
+    slash_command,
+    prefix_command,
+    guild_only,
+    subcommand_required,
+    subcommands("add", "remove", "list"),
+    ephemeral
+)]
+pub async fn autoreply(_: Context<'_>) -> Result<(), Error> {
+    unreachable!()
+}
+
+#[command(slash_command, prefix_command, guild_only, ephemeral)]
 async fn add(
-    trigger: String,
-    reply: String,
-    guild: Id<GuildMarker>,
-    ctx: &Context,
-) -> anyhow::Result<String> {
+    ctx: Context<'_>,
+    #[description = "The trigger text"] trigger: String,
+    #[description = "Text to reply with"] reply: String,
+) -> Result<(), Error> {
     let trigger = trigger.to_lowercase();
+    let guild = ctx.guild_id().unwrap();
     if ctx
-        .data
-        .read()
-        .await
+        .data()
         .rules
+        .read()
+        .unwrap()
         .iter()
         .any(|r| r.trigger == trigger && r.guild == guild)
     {
-        return Ok("Rule already exists, delete it if you want to replace it.".to_owned());
+        ctx.reply("Rule already exists, delete it if you want to replace it.")
+            .await?;
+        return Ok(());
     };
 
     query("insert into rules values ($1, $2, $3)")
         .bind(&trigger)
         .bind(&reply)
-        .bind(guild.to_string())
-        .execute(&ctx.db)
+        .bind(ctx.guild_id().unwrap().to_string())
+        .execute(&ctx.data().db)
         .await?;
 
     let out = format!("Added rule `{}`!", trigger);
 
-    ctx.data.write().await.rules.push(Rule {
+    ctx.data().rules.write().unwrap().push(Rule {
         trigger,
         reply,
         guild,
     });
 
-    Ok(out)
+    ctx.reply(out).await?;
+
+    Ok(())
 }
-async fn remove(trigger: String, guild: Id<GuildMarker>, ctx: &Context) -> anyhow::Result<String> {
+
+#[command(slash_command, prefix_command, guild_only, ephemeral)]
+async fn remove(
+    ctx: Context<'_>,
+    #[description = "The trigger text"] trigger: String,
+) -> Result<(), Error> {
     let trigger = trigger.to_lowercase();
+    let guild = ctx.guild_id().unwrap();
     if !ctx
-        .data
-        .read()
-        .await
+        .data()
         .rules
+        .read()
+        .unwrap()
         .iter()
         .any(|r| r.guild == guild && r.trigger == trigger)
     {
-        return Ok("The rule you're trying to remove doesn't exist.".to_owned());
+        ctx.reply("The rule you're trying to remove doesn't exist.")
+            .await?;
+        return Ok(());
     };
 
     query("delete from rules where trigger = $1 and guild = $2")
         .bind(&trigger)
         .bind(guild.to_string())
-        .execute(&ctx.db)
+        .execute(&ctx.data().db)
         .await?
         .rows_affected();
 
-    let mut data = ctx.data.write().await;
-    data.rules = data
-        .rules
-        .iter()
-        .filter_map(|r| {
-            if r.trigger != trigger || r.guild != guild {
-                Some(r.clone())
-            } else {
-                None
-            }
-        })
-        .collect();
+    {
+        let mut rules = ctx.data().rules.write().unwrap();
+        *rules = (*rules)
+            .iter()
+            .filter_map(|r| {
+                if r.trigger != trigger || r.guild != guild {
+                    Some(r.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+    }
 
-    Ok(format!("Removed rule `{trigger}`"))
+    poise::say_reply(ctx, format!("Removed rule `{trigger}`")).await?;
+    Ok(())
 }
 fn truncate(s: &String) -> String {
     let mut s = s.to_owned();
@@ -99,87 +109,24 @@ fn truncate(s: &String) -> String {
     }
     s
 }
-async fn list(guild: Id<GuildMarker>, ctx: &Context) -> anyhow::Result<String> {
+#[command(slash_command, prefix_command, guild_only, ephemeral)]
+async fn list(ctx: Context<'_>) -> Result<(), Error> {
     let mut out = String::new();
+    let guild = ctx.guild_id().unwrap();
 
-    let data = ctx.data.read().await;
-    let rules = data.rules.iter().filter(|r| r.guild == guild);
+    {
+        let rules = ctx.data().rules.read().unwrap();
 
-    rules.for_each(|r| {
-        out += &format!(
-            "\n- {}\n- - {}",
-            r.trigger,
-            truncate(&r.reply).replace('\n', "- - ")
-        )
-    });
-
-    Ok(out)
-}
-pub async fn interaction(
-    cmd: &CommandData,
-    int: &InteractionCreate,
-    ctx: &Context,
-) -> anyhow::Result<InteractionResponseData> {
-    let error_interaction = Ok(InteractionResponseDataBuilder::new()
-        .content("guh??")
-        .flags(MessageFlags::EPHEMERAL)
-        .build());
-
-    if let Some(member) = &int.member {
-        let settings: (Option<String>,) =
-            match sqlx::query_as("select reply_role from settings where guild = $1")
-                .bind(&int.guild_id.unwrap().to_string())
-                .fetch_optional(&ctx.db)
-                .await?
-            {
-                Some(s) => s,
-                None => return error_interaction,
-            };
-
-        if let (Some(role),) = settings {
-            let role: Id<RoleMarker> = role.parse().unwrap();
-            if let Err(reply) = role_check(member.to_owned(), role) {
-                return Ok(InteractionResponseDataBuilder::new()
-                    .embeds(vec![error_embed(reply)])
-                    .flags(MessageFlags::EPHEMERAL)
-                    .build());
-            }
-        }
-    } else {
-        return error_interaction;
+        rules.iter().filter(|r| r.guild == guild).for_each(|r| {
+            out += &format!(
+                "\n- {}\n- - {}",
+                r.trigger,
+                truncate(&r.reply).replace('\n', "- - ")
+            )
+        });
     }
 
-    let get_str = |o: CommandDataOption| -> String {
-        if let CommandOptionValue::String(s) = o.value {
-            s
-        } else {
-            unreachable!()
-        }
-    };
-    // This is a subcommand, it'll always be here
-    let subcommand = &cmd.options[0];
-    let mut args: VecDeque<_> = match &subcommand.value {
-        CommandOptionValue::SubCommand(c) => c.clone(),
-        _ => unreachable!(),
-    }
-    .into();
-    let (trigger, reply) = (args.pop_front().map(get_str), args.pop_front().map(get_str));
+    poise::say_reply(ctx, out).await?;
 
-    Ok(InteractionResponseDataBuilder::new()
-        .content(match subcommand.name.as_str() {
-            "add" => {
-                add(
-                    trigger.unwrap(),
-                    reply.unwrap(),
-                    int.guild_id.expect("this is only going to run in a guild"),
-                    ctx,
-                )
-                .await
-            }
-            "remove" => remove(trigger.unwrap(), int.guild_id.expect("see above"), ctx).await,
-            "list" => list(int.guild_id.expect("see abover"), ctx).await,
-            _ => unreachable!(),
-        }?)
-        .flags(MessageFlags::EPHEMERAL)
-        .build())
+    Ok(())
 }
