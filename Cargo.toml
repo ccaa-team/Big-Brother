@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.81"
 lazy_static = "1.4.0"
+markov = "1.1.0"
 poise = "0.6.1"
 serde = "1.0.197"
 sqlx = { version = "0.7.1", features = ["runtime-tokio", "postgres", "bigdecimal"] }

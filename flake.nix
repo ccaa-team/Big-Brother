@@ -3,9 +3,13 @@
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
+    crane = {
+      url = "github:ipetkov/crane";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, crane }:
     let
       supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
       version = "0.1.0";
@@ -16,13 +20,17 @@
       packages = forAllSystems (system:
         let
           pkgs = nixpkgsFor.${system};
-          autovirt = pkgs.rustPlatform.buildRustPackage rec {
-            pname = "autovirt";
-            version = "0";
-            cargoLock.lockFile = ./Cargo.lock;
-            src = pkgs.lib.cleanSource ./.;
+          inherit (pkgs) lib;
+          craneLib = crane.lib.${system};
+          src = craneLib.cleanCargoSource (craneLib.path ./.);
+          commonArgs = {
+            inherit src;
+            strictDeps = true;
           };
-
+          artifacts = craneLib.buildDepsOnly commonArgs;
+          autovirt = craneLib.buildPackage (commonArgs // {
+            inherit artifacts;
+          });
           env = builtins.readFile ./.env;
         in {
           inherit autovirt;

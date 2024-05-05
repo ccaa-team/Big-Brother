@@ -3,10 +3,10 @@ use poise::{
     serenity_prelude::{CreateAllowedMentions, CreateEmbed},
     CreateReply,
 };
-use sqlx::{query};
+use sqlx::query;
 
 use crate::{
-    structs::{Rule},
+    structs::Rule,
     utils::{get_settings, EMBED_AUTHOR, EMBED_COLOR, OWNER_ID},
     Context, Error,
 };

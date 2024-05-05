@@ -12,6 +12,7 @@ use sqlx::{query_as, PgPool};
 use structs::Rule;
 
 use poise::{serenity_prelude as serenity, EditTracker};
+use tracing::info;
 use utils::OWNER_ID;
 
 pub struct Data {
@@ -29,6 +30,14 @@ async fn main() -> anyhow::Result<()> {
     let intents = serenity::GatewayIntents::all();
 
     let db = sqlx::PgPool::connect(&env::var("DATABASE_URL")?).await?;
+
+    match sqlx::migrate!().run(&db).await {
+        Ok(_) => (),
+        Err(e) => {
+            info!(?e);
+        }
+    };
+
     let rules: Vec<Rule> = query_as("select * from rules").fetch_all(&db).await?;
 
     let mut owners = HashSet::new();

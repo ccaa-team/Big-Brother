@@ -13,4 +13,4 @@ macro_rules! cmd {
     };
 }
 
-cmd!(autoreply, average, uptime, sql, help);
+cmd!(autoreply, average, uptime, sql, help, markov);
