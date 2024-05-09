@@ -22,6 +22,10 @@ fn capitalize(str: impl Into<String>) -> String {
 
 #[command(prefix_command, slash_command, aliases("define"))]
 /// Fetch a definition from the urban dictionary
+///
+/// You can also use define instead of urban to call this.
+///
+/// `;urban imouto`
 pub async fn urban(
     ctx: Context<'_>,
     #[rest]

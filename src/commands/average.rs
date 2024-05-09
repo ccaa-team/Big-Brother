@@ -7,7 +7,7 @@ use crate::{Context, Error};
 ///
 /// Somehow doesn't work as a slash command
 ///
-/// Example: ;average 7 8 9
+/// `;average 7 8 9`
 pub async fn average(
     ctx: Context<'_>,
     #[description = "Array of numbers, separated by spaces"] array: Vec<f64>,

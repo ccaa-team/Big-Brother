@@ -49,7 +49,7 @@ async fn role(ctx: Context<'_>) -> Result<bool, Error> {
 #[command(slash_command, prefix_command, guild_only, ephemeral, check = "role")]
 /// Add an autoreply
 ///
-/// Example: ;autoreply add "me when" "me when the"
+/// `;autoreply add "me when" "me when the"`
 async fn add(
     ctx: Context<'_>,
     #[description = "The trigger text"] trigger: String,
@@ -93,7 +93,7 @@ async fn add(
 #[command(slash_command, prefix_command, guild_only, ephemeral, check = "role")]
 /// Remove an autoreply
 ///
-/// Example: ;autoreply remove balls
+/// `;autoreply remove balls`
 async fn remove(
     ctx: Context<'_>,
     #[description = "The trigger text"] trigger: String,
