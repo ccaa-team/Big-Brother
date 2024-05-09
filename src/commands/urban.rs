@@ -21,7 +21,7 @@ fn capitalize(str: impl Into<String>) -> String {
 }
 
 #[command(prefix_command, slash_command, aliases("define"))]
-/// Fetch up to three definitions from the urban dictionary
+/// Fetch a definition from the urban dictionary
 pub async fn urban(
     ctx: Context<'_>,
     #[rest]
