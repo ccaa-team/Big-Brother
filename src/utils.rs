@@ -46,3 +46,13 @@ pub async fn get_settings(guild: GuildId, db: &PgPool) -> anyhow::Result<Setting
         ..Default::default()
     }))
 }
+
+pub fn truncate(s: impl Into<String>, max: usize) -> String {
+    let mut s = s.into();
+    if s.chars().count() > max {
+        // if this fails i'm killing myself
+        let char = s.char_indices().nth(max - 1).unwrap();
+        s.truncate(char.0);
+    }
+    s
+}

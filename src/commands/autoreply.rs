@@ -7,7 +7,7 @@ use sqlx::query;
 
 use crate::{
     structs::Rule,
-    utils::{get_settings, EMBED_AUTHOR, EMBED_COLOR},
+    utils::{get_settings, truncate, EMBED_AUTHOR, EMBED_COLOR},
     Context, Error,
 };
 
@@ -34,10 +34,10 @@ async fn role(ctx: Context<'_>) -> Result<bool, Error> {
             let user = ctx.author_member().await.unwrap();
             if !user.roles.contains(&r) {
                 let msg = CreateReply::default()
-                .content(format!(
-                    "You're missing the role required for the command, are you sure you have <@&{r}>?"
-                ))
-                .allowed_mentions(CreateAllowedMentions::new().empty_roles());
+                    .content(format!(
+                        "You're missing the role required for the command, are you sure you have <@&{r}>?"
+                    ))
+                    .allowed_mentions(CreateAllowedMentions::new().empty_roles());
                 send_reply(ctx, msg).await?;
                 return Ok(false);
             }
@@ -137,15 +137,6 @@ async fn remove(
     poise::say_reply(ctx, format!("Removed rule `{trigger}`")).await?;
     Ok(())
 }
-fn truncate(s: &String) -> String {
-    let mut s = s.to_owned();
-    if s.chars().count() > 64 {
-        // if this fails i'm killing myself
-        let char = s.char_indices().nth(63).unwrap();
-        s.truncate(char.0);
-    }
-    s
-}
 #[command(slash_command, prefix_command, guild_only, ephemeral)]
 /// List all autoreplies for the current guild.
 async fn list(ctx: Context<'_>) -> Result<(), Error> {
@@ -159,7 +150,7 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
             out += &format!(
                 "\n- {}\n- - {}",
                 r.trigger,
-                truncate(&r.reply).replace('\n', "- - ")
+                truncate(&r.reply, 64).replace('\n', "- - ")
             )
         });
     }
