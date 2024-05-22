@@ -53,7 +53,9 @@ async fn role(ctx: Context<'_>) -> Result<bool, Error> {
 async fn add(
     ctx: Context<'_>,
     #[description = "The trigger text"] trigger: String,
-    #[description = "Text to reply with"] reply: String,
+    #[description = "Text to reply with"]
+    #[rest]
+    reply: String,
 ) -> Result<(), Error> {
     let trigger = trigger.to_lowercase();
     let guild = ctx.guild_id().unwrap();
@@ -161,16 +163,11 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
         .description(out);
     poise::send_reply(
         ctx,
-        poise::CreateReply {
-            content: None,
-            embeds: vec![embed],
-            attachments: vec![],
-            ephemeral: Some(true),
-            components: None,
-            allowed_mentions: Some(CreateAllowedMentions::new().replied_user(false)),
-            reply: true,
-            __non_exhaustive: (),
-        },
+        CreateReply::default()
+            .reply(true)
+            .ephemeral(true)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false))
+            .embed(embed),
     )
     .await?;
 

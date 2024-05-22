@@ -1,4 +1,7 @@
-use poise::{serenity_prelude::FullEvent, FrameworkContext};
+use poise::{
+    serenity_prelude::{AuditLogEntry, FullEvent, GuildId},
+    FrameworkContext,
+};
 
 use crate::{Data, Error};
 
