@@ -3,6 +3,7 @@ use poise::command;
 
 #[command(slash_command, prefix_command, hide_in_help, track_edits)]
 /// The help command
+///
 /// Uses `poise::samples::help` under the hood
 pub async fn help(ctx: Context<'_>, #[rest] command: Option<String>) -> Result<(), Error> {
     let config = poise::samples::HelpConfiguration {
