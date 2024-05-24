@@ -1,6 +1,6 @@
 use poise::{command, say_reply};
 
-use crate::{Context, Error};
+use crate::{mommy, Context, Error};
 
 #[command(prefix_command, ephemeral, track_edits)]
 /// Calculate the average of an array of numbers, separated by spaces
@@ -14,7 +14,8 @@ pub async fn average(
 ) -> Result<(), Error> {
     let size = array.len() as f64;
     let avg: f64 = array.iter().sum::<f64>() / size;
-    say_reply(ctx, avg.to_string()).await?;
+
+    say_reply(ctx, format!("{avg}\n{}", mommy::praise())).await?;
 
     Ok(())
 }

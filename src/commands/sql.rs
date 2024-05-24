@@ -7,7 +7,7 @@ use sqlx::query;
 use sqlx::{Column, Row};
 
 use crate::utils::EMBED_COLOR;
-use crate::{Context, Error};
+use crate::{mommy, Context, Error};
 
 macro_rules! kms {
     ($row:expr, $name:expr, $t:ty) => {
@@ -51,15 +51,17 @@ pub async fn sql(ctx: Context<'_>, #[rest] sql: String) -> Result<(), Error> {
         let res: String = iter.by_ref().take(4096).collect();
         poise::send_reply(
             ctx,
-            poise::CreateReply::default().embed(
-                CreateEmbed::new()
-                    .color(EMBED_COLOR)
-                    .footer(CreateEmbedFooter::new(format!(
-                        "Query took {}micros",
-                        elapsed.as_micros()
-                    )))
-                    .description(res),
-            ),
+            poise::CreateReply::default()
+                .embed(
+                    CreateEmbed::new()
+                        .color(EMBED_COLOR)
+                        .footer(CreateEmbedFooter::new(format!(
+                            "Query took {}micros",
+                            elapsed.as_micros()
+                        )))
+                        .description(res),
+                )
+                .content(mommy::praise()),
         )
         .await?;
     }

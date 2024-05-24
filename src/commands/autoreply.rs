@@ -6,6 +6,7 @@ use poise::{
 use sqlx::query;
 
 use crate::{
+    mommy,
     structs::Rule,
     utils::{get_settings, truncate, EMBED_AUTHOR, EMBED_COLOR},
     Context, Error,
@@ -49,7 +50,7 @@ async fn role(ctx: Context<'_>) -> Result<bool, Error> {
 #[command(slash_command, prefix_command, guild_only, ephemeral, check = "role")]
 /// Add an autoreply
 ///
-/// `;autoreply add "me when" "me when the"`
+/// `;autoreply add "me when" me when the`
 async fn add(
     ctx: Context<'_>,
     #[description = "The trigger text"] trigger: String,
@@ -79,7 +80,7 @@ async fn add(
         .execute(&ctx.data().db)
         .await?;
 
-    let out = format!("Added rule `{}`!", trigger);
+    let out = format!("Added rule `{}`!\n{}", trigger, mommy::praise());
 
     ctx.data().rules.write().unwrap().push(Rule {
         trigger,
@@ -136,7 +137,11 @@ async fn remove(
             .collect::<Vec<_>>();
     }
 
-    poise::say_reply(ctx, format!("Removed rule `{trigger}`")).await?;
+    poise::say_reply(
+        ctx,
+        format!("Removed rule `{trigger}`\n{}", mommy::praise()),
+    )
+    .await?;
     Ok(())
 }
 #[command(slash_command, prefix_command, guild_only, ephemeral)]
@@ -164,6 +169,7 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
     poise::send_reply(
         ctx,
         CreateReply::default()
+            .content(mommy::praise())
             .reply(true)
             .ephemeral(true)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false))

@@ -5,6 +5,7 @@ use poise::{
 };
 
 use crate::{
+    mommy,
     utils::{EMBED_AUTHOR, EMBED_COLOR},
     Context, Error,
 };
@@ -41,7 +42,8 @@ pub async fn urban(
         let d = &definitions[0];
         let embed = CreateEmbed::new()
             .author(EMBED_AUTHOR.to_owned())
-            .field(capitalize(d.word()), d.definition(), false)
+            .title(capitalize(d.word()))
+            .description(d.definition())
             .field("Example", d.example(), false)
             .footer(
                 CreateEmbedFooter::new("Provided via the Urban Dictionary")
@@ -49,7 +51,11 @@ pub async fn urban(
             )
             .color(EMBED_COLOR.to_owned());
 
-        send_reply(ctx, CreateReply::default().embed(embed)).await?;
+        send_reply(
+            ctx,
+            CreateReply::default().embed(embed).content(mommy::praise()),
+        )
+        .await?;
     }
     Ok(())
 }

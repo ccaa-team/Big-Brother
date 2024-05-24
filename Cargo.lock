@@ -109,6 +109,7 @@ dependencies = [
  "lazy_static",
  "markov",
  "poise",
+ "rand 0.8.5",
  "reqwest 0.12.4",
  "serde",
  "serde_json",
@@ -2812,7 +2813,6 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 [[package]]
 name = "urban-rs"
 version = "0.1.1"
-source = "git+https://g.thevirt.ru/viwty/urban-rs.git?rev=c682a026bbd8da231092b51d06ca52b11456b0c6#c682a026bbd8da231092b51d06ca52b11456b0c6"
 dependencies = [
  "chrono",
  "reqwest 0.12.4",

@@ -17,7 +17,7 @@ tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.40"
 reqwest = { version = "0.12.4", default-features = false, features = ["json", "rustls-tls", "http2", "charset"] }
 tracing-subscriber = "0.3.18"
+rand = "0.8.5"
 
 [dependencies.urban-rs]
-git = "https://g.thevirt.ru/viwty/urban-rs.git"
-rev = "c682a026bbd8da231092b51d06ca52b11456b0c6"
+path = "./urban"
