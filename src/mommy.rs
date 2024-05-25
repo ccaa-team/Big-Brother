@@ -10,7 +10,7 @@ use serde::Deserialize;
 
 use crate::Data;
 
-const MOOD: &'static str = "thirsty";
+const MOOD: &str = "thirsty";
 const REPLACEMENTS: [(&str, &[&str]); 6] = [
     ("{role}", &["mommy"]),
     ("{pronoun}", &["her"]),
@@ -45,7 +45,7 @@ impl<'de> Deserialize<'de> for ChunkList {
         D: serde::Deserializer<'de>,
     {
         let str = String::deserialize(deserializer)?;
-        Ok(Self(str.split(" ").map(|s| Chunk::from(s)).collect()))
+        Ok(Self(str.split(" ").map(Chunk::from).collect()))
     }
 }
 impl Deref for ChunkList {
