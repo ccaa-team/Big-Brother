@@ -1,9 +1,6 @@
-use poise::{
-    serenity_prelude::{AuditLogEntry, FullEvent, GuildId},
-    FrameworkContext,
-};
+use poise::{serenity_prelude::FullEvent, FrameworkContext};
 
-use crate::{Data, Error};
+use crate::{mommy, Data, Error};
 
 mod autoreply;
 mod board;
@@ -76,7 +73,10 @@ pub async fn handle(
         //} => todo!(),
         //FullEvent::InviteCreate { data } => todo!(),
         //FullEvent::InviteDelete { data } => todo!(),
-        FullEvent::Message { new_message } => autoreply::handle(ctx, data, new_message).await?,
+        FullEvent::Message { new_message } => {
+            mommy::message(ctx, data, new_message).await?;
+            autoreply::handle(ctx, data, new_message).await?
+        }
         //FullEvent::MessageDelete {
         //    channel_id,
         //    deleted_message_id,

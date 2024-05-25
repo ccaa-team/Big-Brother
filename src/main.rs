@@ -1,9 +1,6 @@
-use std::{
-    collections::HashSet,
-    env,
-    sync::{Arc, RwLock},
-    time::Instant,
-};
+use std::{collections::HashSet, env, sync::Arc, time::Instant};
+use tokio::sync::{Mutex, RwLock};
+mod checks;
 pub mod commands;
 pub mod events;
 mod mommy;
@@ -12,12 +9,16 @@ pub mod utils;
 use sqlx::{query_as, PgPool};
 use structs::Rule;
 
-use poise::{serenity_prelude as serenity, EditTracker};
+use poise::{
+    serenity_prelude::{self as serenity, UserId},
+    EditTracker,
+};
 use tracing::info;
 use utils::OWNER_ID;
 
 pub struct Data {
     pub rules: RwLock<Vec<Rule>>,
+    pub has_to_beg: Mutex<HashSet<UserId>>,
     pub start: Instant,
     pub db: PgPool,
 }
@@ -51,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
             //pre_command: (),
             //post_command: (),
             // maybe at some point paywall shit? :tshrug:
-            //command_check: (),
+            command_check: Some(|ctx| Box::pin(checks::check(ctx))),
             skip_checks_for_owners: true,
             //reply_callback: (),
             manual_cooldowns: false,
@@ -86,6 +87,7 @@ async fn main() -> anyhow::Result<()> {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {
                     rules: rules.into(),
+                    has_to_beg: Mutex::from(HashSet::new()),
                     start: Instant::now(),
                     db,
                 })

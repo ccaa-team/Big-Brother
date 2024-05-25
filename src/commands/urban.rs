@@ -37,7 +37,14 @@ pub async fn urban(
     let definitions: Vec<_> = urban_rs::fetch_definition(&client, &word).await?;
 
     if definitions.is_empty() {
-        say_reply(ctx, "Couldn't find any definitions, maybe check spelling?").await?;
+        say_reply(
+            ctx,
+            format!(
+                "Couldn't find any definitions, maybe check spelling?\n{}",
+                mommy::negative()
+            ),
+        )
+        .await?;
     } else {
         let d = &definitions[0];
         let embed = CreateEmbed::new()

@@ -1,12 +1,16 @@
 use std::ops::Deref;
-use std::str::FromStr;
 
+use poise::serenity_prelude::Context;
+use poise::serenity_prelude::Message;
+use poise::serenity_prelude::ReactionType;
 use rand::prelude::*;
 
 use rand::thread_rng;
 use serde::Deserialize;
 
-const MOOD: &'static str = "yikes";
+use crate::Data;
+
+const MOOD: &'static str = "thirsty";
 const REPLACEMENTS: [(&str, &[&str]); 6] = [
     ("{role}", &["mommy"]),
     ("{pronoun}", &["her"]),
@@ -41,12 +45,7 @@ impl<'de> Deserialize<'de> for ChunkList {
         D: serde::Deserializer<'de>,
     {
         let str = String::deserialize(deserializer)?;
-        Ok(Self(
-            str.split(" ")
-                // this literally cannot fail
-                .map(|s| Chunk::from_str(s).unwrap())
-                .collect(),
-        ))
+        Ok(Self(str.split(" ").map(|s| Chunk::from(s)).collect()))
     }
 }
 impl Deref for ChunkList {
@@ -57,15 +56,16 @@ impl Deref for ChunkList {
     }
 }
 struct Chunk(String);
-impl FromStr for Chunk {
-    type Err = crate::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut out = String::from(s);
+impl<T> From<T> for Chunk
+where
+    T: AsRef<str>,
+{
+    fn from(value: T) -> Self {
+        let mut out = String::from(value.as_ref());
         for (from, to) in REPLACEMENTS.iter() {
             out = out.replace(from, to.choose(&mut thread_rng()).unwrap());
         }
-        Ok(Self(out))
+        Self(out)
     }
 }
 impl Deref for Chunk {
@@ -110,4 +110,27 @@ fn substitute(s: &[Chunk]) -> String {
 pub fn praise() -> String {
     let mut rng = thread_rng();
     substitute(get_responses().positive.choose(&mut rng).unwrap())
+}
+
+pub fn negative() -> String {
+    let mut rng = thread_rng();
+    substitute(get_responses().negative.choose(&mut rng).unwrap())
+}
+
+pub fn beg() -> String {
+    let mut rng = thread_rng();
+    substitute(get_responses().beg.choose(&mut rng).unwrap())
+}
+
+pub async fn message(ctx: &Context, data: &Data, msg: &Message) -> anyhow::Result<()> {
+    let mut data = data.has_to_beg.lock().await;
+    if data.get(&msg.author.id).is_some() && msg.content.to_lowercase().starts_with("please") {
+        data.take(&msg.author.id);
+        drop(data);
+        // revolving hearts emoji
+        msg.react(&ctx.http, ReactionType::Unicode("💞".to_owned()))
+            .await?;
+    }
+
+    Ok(())
 }

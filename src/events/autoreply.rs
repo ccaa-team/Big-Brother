@@ -11,7 +11,7 @@ pub async fn handle(ctx: &Context, data: &Data, msg: &Message) -> anyhow::Result
     let mut out = String::new();
     data.rules
         .read()
-        .unwrap()
+        .await
         .iter()
         .filter(|r| r.guild == guild && content.contains(&r.trigger))
         .for_each(|s| {

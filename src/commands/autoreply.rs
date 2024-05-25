@@ -36,7 +36,8 @@ async fn role(ctx: Context<'_>) -> Result<bool, Error> {
             if !user.roles.contains(&r) {
                 let msg = CreateReply::default()
                     .content(format!(
-                        "You're missing the role required for the command, are you sure you have <@&{r}>?"
+                        "You're missing the role required for the command, are you sure you have <@&{r}>?\n{}",
+                        mommy::negative()
                     ))
                     .allowed_mentions(CreateAllowedMentions::new().empty_roles());
                 send_reply(ctx, msg).await?;
@@ -64,12 +65,15 @@ async fn add(
         .data()
         .rules
         .read()
-        .unwrap()
+        .await
         .iter()
         .any(|r| r.trigger == trigger && r.guild == guild)
     {
-        ctx.reply("Rule already exists, delete it if you want to replace it.")
-            .await?;
+        ctx.reply(format!(
+            "Rule already exists, delete it if you want to replace it.\n{}",
+            mommy::negative()
+        ))
+        .await?;
         return Ok(());
     };
 
@@ -82,7 +86,7 @@ async fn add(
 
     let out = format!("Added rule `{}`!\n{}", trigger, mommy::praise());
 
-    ctx.data().rules.write().unwrap().push(Rule {
+    ctx.data().rules.write().await.push(Rule {
         trigger,
         reply,
         guild,
@@ -107,12 +111,15 @@ async fn remove(
         .data()
         .rules
         .read()
-        .unwrap()
+        .await
         .iter()
         .any(|r| r.guild == guild && r.trigger == trigger)
     {
-        ctx.reply("The rule you're trying to remove doesn't exist.")
-            .await?;
+        ctx.reply(format!(
+            "The rule you're trying to remove doesn't exist.\n{}",
+            mommy::negative()
+        ))
+        .await?;
         return Ok(());
     };
 
@@ -124,7 +131,7 @@ async fn remove(
         .rows_affected();
 
     {
-        let mut rules = ctx.data().rules.write().unwrap();
+        let mut rules = ctx.data().rules.write().await;
         *rules = (*rules)
             .iter()
             .filter_map(|r| {
@@ -151,7 +158,7 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
     let guild = ctx.guild_id().unwrap();
 
     {
-        let rules = ctx.data().rules.read().unwrap();
+        let rules = ctx.data().rules.read().await;
 
         rules.iter().filter(|r| r.guild == guild).for_each(|r| {
             out += &format!(
